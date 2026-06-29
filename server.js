@@ -1,134 +1,142 @@
-// server.js - Heroku Entry Point
-// Hii ina-run FastAPI kwa njia ya Node.js
+// server.js - Main Server with Firebase, DeepSeek, JWT
+// Version: 31.0
 
-const http = require('http');
-const { spawn } = require('child_process');
-const fs = require('fs');
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
+require('dotenv').config();
 
-// Port ya Heroku
-const PORT = process.env.PORT || 8000;
+// Import routes
+const authRoutes = require('./routes/auth');
+const apiRoutes = require('./routes/api');
+
+// Initialize Express
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// =====================================================
+// MIDDLEWARE
+// =====================================================
+
+// Security
+app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false
+}));
+
+// CORS
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Sovereign-Key']
+}));
 
 // Logging
-console.log(`🚀 Sovereign Grid starting on port ${PORT}`);
-console.log(`📂 Current directory: ${__dirname}`);
+app.use(morgan('combined'));
 
-// Angalia kama FastAPI ipo
-const mainPy = path.join(__dirname, 'main.py');
-if (!fs.existsSync(mainPy)) {
-    console.error('❌ main.py not found! Creating default...');
-    createDefaultMainPy();
-}
+// Rate Limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: { error: 'Too many requests, please try again later.' }
+});
+app.use('/api/', limiter);
 
-// Anzisha FastAPI server
-function startFastAPI() {
-    console.log('🐍 Starting FastAPI server...');
-    
-    // Tumia uvicorn kuanzisha FastAPI
-    const python = spawn('python', ['-m', 'uvicorn', 'main:app', '--host', '0.0.0.0', '--port', PORT]);
-    
-    // Handle stdout
-    python.stdout.on('data', (data) => {
-        console.log(`📡 ${data.toString().trim()}`);
-    });
-    
-    // Handle stderr
-    python.stderr.on('data', (data) => {
-        console.error(`⚠️ ${data.toString().trim()}`);
-    });
-    
-    // Handle exit
-    python.on('close', (code) => {
-        console.log(`🔴 FastAPI process exited with code ${code}`);
-        if (code !== 0) {
-            console.log('🔄 Restarting FastAPI...');
-            setTimeout(startFastAPI, 1000);
+// Body parsing
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Static files
+app.use(express.static(path.join(__dirname, 'public')));
+
+// =====================================================
+// ROUTES
+// =====================================================
+
+// Health check
+app.get('/', (req, res) => {
+    res.json({
+        status: 'ok',
+        message: 'Sovereign Grid is running!',
+        version: '31.0',
+        timestamp: new Date().toISOString(),
+        services: {
+            firebase: process.env.FIREBASE_URL ? 'connected' : 'not configured',
+            deepseek: process.env.DEEPSEEK_API_KEY ? 'connected' : 'not configured'
         }
     });
-    
-    // Handle errors
-    python.on('error', (err) => {
-        console.error(`❌ Failed to start Python: ${err.message}`);
-        console.log('🔄 Retrying...');
-        setTimeout(startFastAPI, 2000);
+});
+
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'alive',
+        version: '31.0',
+        uptime: process.uptime()
     });
-}
+});
 
-// Unda default main.py kama haipo
-function createDefaultMainPy() {
-    const content = `
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-import os
+app.get('/ready', (req, res) => {
+    res.json({ status: 'ready' });
+});
 
-app = FastAPI(title="Sovereign Grid", version="31.0")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-@app.get("/")
-async def root():
-    return {"status": "ok", "message": "Sovereign Grid is running on Heroku!"}
-
-@app.get("/health")
-async def health():
-    return {"status": "alive", "version": "31.0"}
-
-@app.get("/ready")
-async def ready():
-    return {"status": "ready"}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
-`;
-    
-    fs.writeFileSync('main.py', content);
-    console.log('✅ Created default main.py');
-}
-
-// Angalia kama Python ipo
-function checkPython() {
-    const python = spawn('python', ['--version']);
-    python.on('close', (code) => {
-        if (code !== 0) {
-            console.error('❌ Python not found! Trying python3...');
-            startWithPython3();
-        } else {
-            startFastAPI();
-        }
+// Version info
+app.get('/version', (req, res) => {
+    res.json({
+        version: '31.0',
+        api_version: 'v1',
+        environment: process.env.NODE_ENV || 'development',
+        firebase: process.env.FIREBASE_URL ? 'configured' : 'not configured'
     });
-    python.on('error', () => {
-        console.error('❌ Python not found! Trying python3...');
-        startWithPython3();
+});
+
+// Auth routes
+app.use('/api/auth', authRoutes.router);
+
+// API routes (Sovereign Grid + DeepSeek)
+app.use('/api', apiRoutes);
+
+// =====================================================
+// ERROR HANDLING
+// =====================================================
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({ error: 'Endpoint not found' });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+    console.error('Global error:', err);
+    res.status(500).json({
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
-}
+});
 
-function startWithPython3() {
-    const python = spawn('python3', ['-m', 'uvicorn', 'main:app', '--host', '0.0.0.0', '--port', PORT]);
-    python.stdout.on('data', (data) => console.log(`📡 ${data}`));
-    python.stderr.on('data', (data) => console.error(`⚠️ ${data}`));
-    python.on('close', (code) => {
-        if (code !== 0) setTimeout(startWithPython3, 1000);
-    });
-}
+// =====================================================
+// START SERVER
+// =====================================================
 
-// Anzisha
-console.log('🔍 Checking Python installation...');
-checkPython();
+app.listen(PORT, () => {
+    console.log('========================================');
+    console.log(`🚀 Sovereign Grid v31.0 running on port ${PORT}`);
+    console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔥 Firebase: ${process.env.FIREBASE_URL ? '✅ Connected' : '❌ Not configured'}`);
+    console.log(`🤖 DeepSeek: ${process.env.DEEPSEEK_API_KEY ? '✅ Connected' : '❌ Not configured'}`);
+    console.log(`🔑 JWT: ${process.env.JWT_SECRET ? '✅ Configured' : '❌ Not configured'}`);
+    console.log('========================================');
+});
 
-// Handle process signals
+// Handle shutdown gracefully
 process.on('SIGTERM', () => {
-    console.log('🛑 Received SIGTERM, shutting down...');
+    console.log('🛑 Received SIGTERM, shutting down gracefully...');
     process.exit(0);
 });
 
 process.on('SIGINT', () => {
-    console.log('🛑 Received SIGINT, shutting down...');
+    console.log('🛑 Received SIGINT, shutting down gracefully...');
     process.exit(0);
 });

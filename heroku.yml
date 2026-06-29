@@ -1,0 +1,8 @@
+# heroku.yml - Heroku Build and Release Configuration
+
+build:
+  docker:
+    web: Dockerfile.heroku
+
+run:
+  web: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 2

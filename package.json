@@ -1,7 +1,7 @@
 {
   "name": "sovereign-grid",
   "version": "31.0.0",
-  "description": "Sovereign Grid - AI Infrastructure Platform for Heroku",
+  "description": "Sovereign Grid - AI Infrastructure with Firebase & DeepSeek",
   "main": "server.js",
   "engines": {
     "node": "18.x",
@@ -9,22 +9,34 @@
   },
   "scripts": {
     "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "echo '📦 Installing Python dependencies...' && pip install -r requirements.txt || echo '⚠️ Pip install failed, continuing...'"
+    "dev": "nodemon server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "http": "^0.0.1-security"
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "dotenv": "^16.4.5",
+    "jsonwebtoken": "^9.0.2",
+    "firebase-admin": "^12.1.1",
+    "axios": "^1.6.8",
+    "express-rate-limit": "^7.1.5",
+    "bcrypt": "^5.1.1"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/yourusername/sovereign-grid.git"
   },
   "keywords": [
     "ai",
-    "fastapi",
+    "firebase",
+    "deepseek",
     "payments",
-    "heroku"
+    "sovereign-grid"
   ],
   "author": "Sovereign Grid Team",
   "license": "Commercial"

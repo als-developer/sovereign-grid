@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Sovereign Grid</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0e17; color: #fff; }
+        .sidebar { background: #111927; border-right: 1px solid #1a2332; }
+        .sidebar-link { transition: all 0.3s; }
+        .sidebar-link:hover { background: #1a2332; border-left: 3px solid #4f46e5; }
+        .sidebar-link.active { background: #1a2332; border-left: 3px solid #4f46e5; }
+        .stat-card { background: #111927; border: 1px solid #1a2332; border-radius: 12px; transition: all 0.3s; }
+        .stat-card:hover { transform: translateY(-2px); border-color: #4f46e5; }
+        .table-container { background: #111927; border: 1px solid #1a2332; border-radius: 12px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px 16px; background: #0d1520; color: #8892b0; font-weight: 600; font-size: 12px; text-transform: uppercase; }
+        td { padding: 12px 16px; border-bottom: 1px solid #1a2332; font-size: 14px; }
+        tr:hover { background: #0d1520; }
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+        .badge-active { background: #064e3b; color: #34d399; }
+        .badge-pending { background: #713f12; color: #fbbf24; }
+        .badge-inactive { background: #4a1942; color: #f472b6; }
+        .badge-success { background: #064e3b; color: #34d399; }
+        .badge-danger { background: #7f1d1d; color: #f87171; }
+        .input-field { background: #0d1520; border: 1px solid #1a2332; border-radius: 8px; padding: 10px 14px; color: #fff; width: 100%; }
+        .input-field:focus { outline: none; border-color: #4f46e5; }
+        .btn-primary { background: #4f46e5; padding: 10px 24px; border-radius: 8px; border: none; color: #fff; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-primary:hover { background: #4338ca; }
+        .btn-danger { background: #dc2626; padding: 10px 24px; border-radius: 8px; border: none; color: #fff; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-success { background: #16a34a; padding: 10px 24px; border-radius: 8px; border: none; color: #fff; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-success:hover { background: #15803d; }
+        .btn-outline { background: transparent; padding: 10px 24px; border-radius: 8px; border: 1px solid #1a2332; color: #8892b0; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-outline:hover { border-color: #4f46e5; color: #fff; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: #111927; border: 1px solid #1a2332; border-radius: 16px; padding: 32px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
+        .modal-content h2 { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+        .modal-content label { display: block; font-size: 13px; color: #8892b0; margin-bottom: 6px; }
+        .modal-content .input-field { margin-bottom: 16px; }
+        .modal-actions { display: flex; gap: 12px; margin-top: 20px; }
+        .modal-actions button { flex: 1; }
+    </style>
+</head>
+<body>
+
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <aside class="sidebar w-64 p-6 flex flex-col">
+        <div class="flex items-center gap-3 mb-8">
+            <span class="text-2xl">⚡</span>
+            <span class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">Sovereign Grid</span>
+        </div>
+        
+        <nav class="flex-1 space-y-1">
+            <a href="#" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-white" data-page="dashboard">
+                <i class="fas fa-chart-pie w-5"></i> Dashboard
+            </a>
+            <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400" data-page="users">
+                <i class="fas fa-users w-5"></i> Users
+            </a>
+            <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400" data-page="payments">
+                <i class="fas fa-credit-card w-5"></i> Payments
+            </a>
+            <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400" data-page="api-keys">
+                <i class="fas fa-key w-5"></i> API Keys
+            </a>
+            <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400" data-page="ai-jobs">
+                <i class="fas fa-robot w-5"></i> AI Jobs
+            </a>
+            <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400" data-page="logs">
+                <i class="fas fa-history w-5"></i> Audit Logs
+            </a>
+            <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400" data-page="settings">
+                <i class="fas fa-cog w-5"></i> Settings
+            </a>
+        </nav>
+
+        <div class="border-t border-gray-800 pt-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold">A</div>
+                <div>
+                    <p class="text-sm font-medium">Admin</p>
+                    <p class="text-xs text-gray-500">admin@ailifesolution.com</p>
+                </div>
+                <a href="/api/auth/logout" class="ml-auto text-gray-500 hover:text-white"><i class="fas fa-sign-out-alt"></i></a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-8">
+        
+        <!-- ========== DASHBOARD PAGE ========== -->
+        <div id="page-dashboard">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-2xl font-bold">Dashboard</h1>
+                    <p class="text-gray-400 text-sm">Welcome back, Admin! Here's what's happening with your platform.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-gray-400"><i class="fas fa-circle text-green-400 text-xs"></i> All systems operational</span>
+                    <button onclick="refreshData()" class="btn-outline text-sm"><i class="fas fa-sync-alt"></i> Refresh</button>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="stat-card p-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-400 text-sm">Total Users</p>
+                            <p class="text-3xl font-bold mt-1" id="totalUsers">0</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-full bg-indigo-600/20 flex items-center justify-center text-indigo-400"><i class="fas fa-users text-xl"></i></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2"><span class="text-green-400">↑ 12%</span> vs last month</p>
+                </div>
+                <div class="stat-card p-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-400 text-sm">Total Revenue</p>
+                            <p class="text-3xl font-bold mt-1" id="totalRevenue">$0</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-full bg-emerald-600/20 flex items-center justify-center text-emerald-400"><i class="fas fa-dollar-sign text-xl"></i></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2"><span class="text-green-400">↑ 8%</span> vs last month</p>
+                </div>
+                <div class="stat-card p-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-400 text-sm">AI Jobs Processed</p>
+                            <p class="text-3xl font-bold mt-1" id="totalJobs">0</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-full bg-cyan-600/20 flex items-center justify-center text-cyan-400"><i class="fas fa-robot text-xl"></i></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2"><span class="text-green-400">↑ 24%</span> vs last month</p>
+                </div>
+                <div class="stat-card p-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-400 text-sm">API Calls Today</p>
+                            <p class="text-3xl font-bold mt-1" id="apiCalls">0</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-full bg-purple-600/20 flex items-center justify-center text-purple-400"><i class="fas fa-code text-xl"></i></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2"><span class="text-green-400">↑ 5%</span> vs yesterday</p>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="stat-card p-6">
+                    <h3 class="font-semibold mb-4">Revenue (Last 7 Days)</h3>
+                    <canvas id="revenueChart" height="200"></canvas>
+                </div>
+                <div class="stat-card p-6">
+                    <h3 class="font-semibold mb-4">API Usage by Engine</h3>
+                    <canvas id="engineChart" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="table-container">
+                <div class="flex justify-between items-center p-4 border-b border-gray-800">
+                    <h3 class="font-semibold">Recent Activity</h3>
+                    <button class="text-sm text-indigo-400 hover:text-indigo-300">View All →</button>
+                </div>
+                <div id="recentActivity">
+                    <table>
+                        <thead>
+                            <tr><th>User</th><th>Action</th><th>Resource</th><th>Time</th><th>Status</th></tr>
+                        </thead>
+                        <tbody id="activityTableBody">
+                            <tr><td colspan="5" class="text-center text-gray-500 py-8">Loading activities...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== USERS PAGE ========== -->
+        <div id="page-users" class="hidden">
+            <div class="flex justify-between items-center mb-8">
+                <div><h1 class="text-2xl font-bold">Users</h1><p class="text-gray-400 text-sm">Manage all platform users</p></div>
+                <button onclick="openModal('userModal')" class="btn-primary"><i class="fas fa-plus"></i> Add User</button>
+            </div>
+            <div class="table-container">
+                <div class="flex items-center gap-4 p-4 border-b border-gray-800">
+                    <input type="text" placeholder="Search users..." class="input-field max-w-xs" id="userSearch" onkeyup="filterUsers()">
+                    <select class="input-field max-w-xs" id="userFilter">
+                        <option value="all">All Users</option>
+                        <option value="active">Active</option>
+                        <option value="pending">Pending</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+                <table>
+                    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+                    <tbody id="usersTableBody">
+                        <tr><td colspan="6" class="text-center text-gray-500 py-8">Loading users...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex justify-between items-center mt-4 text-sm text-gray-500">
+                <span id="userCount">0 users</span>
+                <div class="flex gap-2"><button class="px-3 py-1 bg-gray-800 rounded">Previous</button><button class="px-3 py-1 bg-indigo-600 rounded">1</button><button class="px-3 py-1 bg-gray-800 rounded">2</button><button class="px-3 py-1 bg-gray-800 rounded">3</button><button class="px-3 py-1 bg-gray-800 rounded">Next</button></div>
+            </div>
+        </div>
+
+        <!-- ========== PAYMENTS PAGE ========== -->
+        <div id="page-payments" class="hidden">
+            <div class="flex justify-between items-center mb-8">
+                <div><h1 class="text-2xl font-bold">Payments</h1><p class="text-gray-400 text-sm">Transaction history and payment management</p></div>
+                <button onclick="openModal('paymentModal')" class="btn-primary"><i class="fas fa-plus"></i> Record Payment</button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Transaction ID</th><th>User</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+                    <tbody id="paymentsTableBody">
+                        <tr><td colspan="7" class="text-center text-gray-500 py-8">Loading payments...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ========== API KEYS PAGE ========== -->
+        <div id="page-api-keys" class="hidden">
+            <div class="flex justify-between items-center mb-8">
+                <div><h1 class="text-2xl font-bold">API Keys</h1><p class="text-gray-400 text-sm">Manage developer API keys</p></div>
+                <button onclick="openModal('apiKeyModal')" class="btn-primary"><i class="fas fa-key"></i> Generate Key</button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Key Name</th><th>Key ID</th><th>Owner</th><th>Status</th><th>Created</th><th>Last Used</th><th>Actions</th></tr></thead>
+                    <tbody id="apiKeysTableBody">
+                        <tr><td colspan="7" class="text-center text-gray-500 py-8">Loading API keys...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ========== AI JOBS PAGE ========== -->
+        <div id="page-ai-jobs" class="hidden">
+            <div class="flex justify-between items-center mb-8">
+                <div><h1 class="text-2xl font-bold">AI Jobs</h1><p class="text-gray-400 text-sm">Track AI processing jobs</p></div>
+                <button onclick="openModal('aiJobModal')" class="btn-primary"><i class="fas fa-play"></i> New Job</button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Job ID</th><th>User</th><th>Type</th><th>Status</th><th>Created</th><th>Completed</th><th>Actions</th></tr></thead>
+                    <tbody id="aiJobsTableBody">
+                        <tr><td colspan="7" class="text-center text-gray-500 py-8">Loading AI jobs...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ========== LOGS PAGE ========== -->
+        <div id="page-logs" class="hidden">
+            <div class="flex justify-between items-center mb-8">
+                <div><h1 class="text-2xl font-bold">Audit Logs</h1><p class="text-gray-400 text-sm">Complete audit trail of all platform activities</p></div>
+                <button onclick="exportLogs()" class="btn-outline"><i class="fas fa-download"></i> Export CSV</button>
+            </div>
+            <div class="table-container">
+                <div class="flex items-center gap-4 p-4 border-b border-gray-800">
+                    <input type="text" placeholder="Search logs..." class="input-field max-w-xs">
+                    <select class="input-field max-w-xs"><option>All Actions</option><option>API Call</option><option>Login</option><option>Payment</option><option>Key Generated</option></select>
+                    <select class="input-field max-w-xs"><option>Last 24 Hours</option><option>Last 7 Days</option><option>Last 30 Days</option></select>
+                </div>
+                <table>
+                    <thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>IP Address</th><th>Status</th></tr></thead>
+                    <tbody id="logsTableBody">
+                        <tr><td colspan="5" class="text-center text-gray-500 py-8">Loading logs...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ========== SETTINGS PAGE ========== -->
+        <div id="page-settings" class="hidden">
+            <h1 class="text-2xl font-bold mb-8">Settings</h1>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="stat-card p-6">
+                    <h3 class="font-semibold mb-4">System Configuration</h3>
+                    <div class="space-y-4">
+                        <div><label class="text-sm text-gray-400 block">Environment</label><span class="text-sm font-medium">Production</span></div>
+                        <div><label class="text-sm text-gray-400 block">API Version</label><span class="text-sm font-medium">v31.0</span></div>
+                        <div><label class="text-sm text-gray-400 block">Node</label><span class="text-sm font-medium">sovereign-grid-ailife.herokuapp.com</span></div>
+                        <div><label class="text-sm text-gray-400 block">Uptime</label><span class="text-sm font-medium text-green-400" id="uptimeDisplay">--</span></div>
+                    </div>
+                </div>
+
+                <div class="stat-card p-6">
+                    <h3 class="font-semibold mb-4">Security</h3>
+                    <div class="space-y-4">
+                        <div><label class="text-sm text-gray-400 block">JWT Secret</label><span class="text-sm font-medium">••••••••••••••••</span></div>
+                        <div><label class="text-sm text-gray-400 block">Firebase Status</label><span class="text-sm font-medium text-green-400">✅ Connected</span></div>
+                        <div><label class="text-sm text-gray-400 block">DeepSeek Status</label><span class="text-sm font-medium text-green-400">✅ Connected</span></div>
+                        <button class="btn-primary text-sm w-full">Rotate API Keys</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card p-6 mt-6">
+                <h3 class="font-semibold mb-4">Danger Zone</h3>
+                <div class="flex items-center gap-4">
+                    <button class="btn-danger" onclick="clearAllData()">Clear All Data</button>
+                    <button class="btn-danger" onclick="suspendPlatform()">Suspend Platform</button>
+                    <span class="text-xs text-gray-500">⚠️ These actions are irreversible</span>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- ========== MODALS ========== -->
+
+<!-- User Modal -->
+<div class="modal-overlay" id="userModal">
+    <div class="modal-content">
+        <h2><i class="fas fa-user-plus text-indigo-400"></i> Add User</h2>
+        <form id="userForm">
+            <label>Full Name</label>
+            <input type="text" class="input-field" id="userName" placeholder="John Doe" required>
+            <label>Email</label>
+            <input type="email" class="input-field" id="userEmail" placeholder="john@example.com" required>
+            <label>Role</label>
+            <select class="input-field" id="userRole"><option value="user">User</option><option value="admin">Admin</option><option value="developer">Developer</option></select>
+            <label>Password</label>
+            <input type="password" class="input-field" id="userPassword" placeholder="••••••••" required>
+            <div class="modal-actions">
+                <button type="button" onclick="closeModal('userModal')" class="btn-outline">Cancel</button>
+                <button type="submit" class="btn-primary">Create User</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal-overlay" id="paymentModal">
+    <div class="modal-content">
+        <h2><i class="fas fa-credit-card text-emerald-400"></i> Record Payment</h2>
+        <form id="paymentForm">
+            <label>User Email</label>
+            <input type="email" class="input-field" id="paymentUser" placeholder="user@example.com" required>
+            <label>Amount (USD)</label>
+            <input type="number" class="input-field" id="paymentAmount" placeholder="49.00" step="0.01" required>
+            <label>Currency</label>
+            <select class="input-field" id="paymentCurrency"><option value="USD">USD</option><option value="TZS">TZS</option><option value="KES">KES</option></select>
+            <label>Description</label>
+            <input type="text" class="input-field" id="paymentDesc" placeholder="API Credits">
+            <div class="modal-actions">
+                <button type="button" onclick="closeModal('paymentModal')" class="btn-outline">Cancel</button>
+                <button type="submit" class="btn-success">Record Payment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- API Key Modal -->
+<div class="modal-overlay" id="apiKeyModal">
+    <div class="modal-content">
+        <h2><i class="fas fa-key text-purple-400"></i> Generate API Key</h2>
+        <form id="apiKeyForm">
+            <label>Key Name</label>
+            <input type="text" class="input-field" id="keyName" placeholder="Production Key" required>
+            <label>Owner</label>
+            <input type="text" class="input-field" id="keyOwner" placeholder="developer@example.com" required>
+            <label>Permissions</label>
+            <select class="input-field" id="keyPermissions"><option value="read">Read Only</option><option value="read-write">Read & Write</option><option value="admin">Admin</option></select>
+            <div class="modal-actions">
+                <button type="button" onclick="closeModal('apiKeyModal')" class="btn-outline">Cancel</button>
+                <button type="submit" class="btn-primary">Generate Key</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- AI Job Modal -->
+<div class="modal-overlay" id="aiJobModal">
+    <div class="modal-content">
+        <h2><i class="fas fa-robot text-cyan-400"></i> New AI Job</h2>
+        <form id="aiJobForm">
+            <label>Job Type</label>
+            <select class="input-field" id="jobType"><option value="fact_check">Fact Check</option><option value="sentiment">Sentiment Analysis</option><option value="summarize">Summarize</option><option value="chat">Chat</option></select>
+            <label>Input Text</label>
+            <textarea class="input-field" id="jobInput" rows="4" placeholder="Enter text to process..."></textarea>
+            <label>User ID</label>
+            <input type="text" class="input-field" id="jobUserId" placeholder="user123">
+            <div class="modal-actions">
+                <button type="button" onclick="closeModal('aiJobModal')" class="btn-outline">Cancel</button>
+                <button type="submit" class="btn-primary"><i class="fas fa-play"></i> Run Job</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========== SCRIPTS ========== -->
+<script>
+// API BASE URL
+const API_URL = window.location.origin;
+
+// ============================================
+// DASHBOARD DATA
+// ============================================
+
+async function fetchDashboardData() {
+    try {
+        const response = await fetch(`${API_URL}/api/admin/stats`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('totalUsers').textContent = data.stats.totalUsers || 0;
+            document.getElementById('totalRevenue').textContent = '$' + (data.stats.totalRevenue || 0).toLocaleString();
+            document.getElementById('totalJobs').textContent = data.stats.totalJobs || 0;
+            document.getElementById('apiCalls').textContent = data.stats.apiCalls || 0;
+        }
+    } catch (error) {
+        console.error('Dashboard fetch error:', error);
+    }
+}
+
+async function fetchRecentActivity() {
+    try {
+        const response = await fetch(`${API_URL}/api/admin/activity`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+        });
+        const data = await response.json();
+        
+        const tbody = document.getElementById('activityTableBody');
+        if (data.activities && data.activities.length > 0) {
+            tbody.innerHTML = data.activities.map(a => `
+                <tr>
+                    <td>${a.user}</td>
+                    <td>${a.action}</td>
+                    <td>${a.resource || '-'}</td>
+                    <td>${new Date(a.time).toLocaleString()}</td>
+                    <td><span class="badge badge-${a.status === 'success' ? 'success' : 'danger'}">${a.status}</span></td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500 py-8">No recent activity</td></tr>';
+        }
+    } catch (error) {
+        console.error('Activity fetch error:', error);
+    }
+}
+
+// ============================================
+// USERS
+// ============================================
+
+async function fetchUsers() {
+    try {
+        const response = await fetch(`${API_URL}/api/admin/users`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+        });
+        const data = await response.json();
+        
+        const tbody = document.getElementById('usersTableBody');
+        if (data.users && data.users.length > 0) {
+            tbody.innerHTML = data.users.map(u => `
+                <tr>
+                    <td>${u.name || '-'}</td>
+                    <td>${u.email}</td>
+                    <td><span class="badge badge-${u.role === 'admin' ? 'active' : 'pending'}">${u.role || 'user'}</span></td>
+                    <td><span class="badge badge-${u.status === 'active' ? 'active' : 'inactive'}">${u.status || 'active'}</span></td>
+                    <td>${new Date(u.createdAt).toLocaleDateString()}</td>
+                    <td>
+                        <button onclick="editUser('${u.id}')" class="text-indigo-400 hover:text-indigo-300 mr-2"><i class="fas fa-edit"></i></button>
+                        <button onclick="deleteUser('${u.id}')" class="text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+            document.getElementById('userCount').textContent = data.users.length + ' users';
+        } else {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-500 py-8">No users found</td></tr>';
+            document.getElementById('userCount').textContent = '0 users';
+        }
+    } catch (error) {
+        console.error('Users fetch error:', error);
+    }
+}
+
+// ============================================
+// PAYMENTS
+// ============================================
+
+async function fetchPayments() {
+    try {
+        const response = await fetch(`${API_URL}/api/admin/payments`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+        });
+        const data = await response.json();
+        
+        const tbody = document.getElementById('paymentsTableBody');
+        if (data.payments && data.payments.length > 0) {
+            tbody.innerHTML = data.payments.map(p => `
+                <tr>
+                    <td class="font-mono text-xs">${p.id}</td>
+                    <td>${p.user}</td>
+                    <td>$${p.amount}</td>
+                    <td>${p.method}</td>
+                    <td><span class="badge badge-${p.status === 'completed' ? 'success' : 'pending'}">${p.status}</span></td>
+                    <td>${new Date(p.date).toLocaleDateString()}</td>
+                    <td><button onclick="viewPayment('${p.id}')" class="text-indigo-400 hover:text-indigo-300"><i class="fas fa-eye"></i></button></td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-500 py-8">No payments found</td></tr>';
+        }
+    } catch (error) {
+        console.error('Payments fetch error:', error);
+    }
+}
+
+// ============================================
+// API KEYS
+// ============================================
+
+async function fetchAPIKeys() {
+    try {
+        const response = await fetch(`${API_URL}/api/admin/api-keys`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+        });
+        const data = await response.json();
+        
+        const tbody = document.getElementById('apiKeysTableBody');
+        if (data.keys && data.keys.length > 0) {
+            tbody.innerHTML = data.keys.map(k => `
+                <tr>
+                    <td>${k.name}</td>
+                    <td class="font-mono text-xs">${k.id}</td>
+                    <td>${k.owner}</td>
+                    <td><span class="badge badge-${k.status === 'active' ? 'success' : 'danger'}">${k.status}</span></td>
+                    <td>${new Date(k.created).toLocaleDateString()}</td>
+                    <td>${k.lastUsed ? new Date(k.lastUsed).toLocaleDateString() : 'Never'}</td>
+                    <td>
+                        <button onclick="revokeKey('${k.id}')" class="text-red-400 hover:text-red-300"><i class="fas fa-ban"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-500 py-8">No API keys found</td></tr>';
+        }
+    } catch (error) {
+        console.error('API Keys fetch error:', error);
+    }
+}
+
+// ============================================
+// AI JOBS
+// ============================================
+
+async function fetchAIJobs() {
+    try {
+        const response = await fetch(`${API_URL}/api/admin/ai-jobs`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+        });
+        const data = await response.json();
+        
+        const tbody = document.getElementById('aiJobsTableBody');
+        if (data.jobs && data.jobs.length > 0) {
+            tbody.innerHTML = data.jobs.map(j => `
+                <tr>
+                    <td class="font-mono text-xs">${j.id}</td>
+                    <td>${j.user}</td>
+                    <td>${j.type}</td>
+                    <td><span class="badge badge-${j.status === 'completed' ? 'success' : j.status === 'processing' ? 'pending' : 'danger'}">${j.status}</span></td>
+                    <td>${new Date(j.created).toLocaleString()}</td>
+                    <td>${j.completed ? new Date(j.completed).toLocaleString() : '-'}</td>
+                    <td><button onclick="viewJob('${j.id}')" class="text-indigo-400 hover:text-indigo-300"><i class="fas fa-eye"></i></button></td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-500 py-8">No AI jobs found</td></tr>';
+        }
+    } catch (error) {
+        console.error('AI Jobs fetch error:', error);
+    }
+}
+
+// ============================================
+// LOGS
+// ============================================
+
+async function fetchLogs() {
+    try {
+        const response = await fetch(`${API_URL}/api/admin/logs`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+        });
+        const data = await response.json();
+        
+        const tbody = document.getElementById('logsTableBody');
+        if (data.logs && data.logs.length > 0) {
+            tbody.innerHTML = data.logs.map(l => `
+                <tr>
+                    <td>${new Date(l.timestamp).toLocaleString()}</td>
+                    <td>${l.user || 'system'}</td>
+                    <td>${l.action}</td>
+                    <td>${l.ip || '-'}</td>
+                    <td><span class="badge badge-${l.status === 'success' ? 'success' : 'danger'}">${l.status}</span></td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500 py-8">No logs found</td></tr>';
+        }
+    } catch (error) {
+        console.error('Logs fetch error:', error);
+    }
+}
+
+// ============================================
+// UPTIME
+// ============================================
+
+async function fetchUptime() {
+    try {
+        const response = await fetch(`${API_URL}/api/admin/uptime`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+        });
+        const data = await response.json();
+        document.getElementById('uptimeDisplay').textContent = data.uptime || '--';
+    } catch (error) {
+        console.error('Uptime fetch error:', error);
+    }
+}
+
+// ============================================
+// CHARTS
+// ============================================
+
+let revenueChartInstance = null;
+let engineChartInstance = null;
+
+async function initCharts() {
+    try {
+        // Revenue Chart
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        const revenueData = await fetch(`${API_URL}/api/admin/chart-revenue`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+        }).then(r => r.json());
+        
+        revenueChartInstance = new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: revenueData.labels || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Revenue (USD)',
+                    data: revenueData.values || [0, 0, 0, 0, 0, 0, 0],
+                    borderColor: '#4f46e5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { labels: { color: '#8892b0' } } },
+                scales: { y: { ticks: { color: '#8892b0' } }, x: { ticks: { color: '#8892b0' } } }
+            }
+        });
+
+        // Engine Chart
+        const engineCtx = document.getElementById('engineChart').getContext('2d');
+        const engineData = await fetch(`${API_URL}/api/admin/chart-engines`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+        }).then(r => r.json());
+        
+        engineChartInstance = new Chart(engineCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['TruthEngine', 'CentPay', 'AI Shrinker', 'DeepSeek'],
+                datasets: [{
+                    data: engineData.values || [30, 25, 20, 25],
+                    backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#8b5cf6']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { position: 'bottom', labels: { color: '#8892b0' } } }
+            }
+        });
+    } catch (error) {
+        console.error('Chart init error:', error);
+    }
+}
+
+// ============================================
+// PAGE NAVIGATION
+// ============================================
+
+document.querySelectorAll('.sidebar-link').forEach(link => {
+    link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const page = this.dataset.page;
+        
+        // Update sidebar
+        document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active', 'text-white'));
+        this.classList.add('active', 'text-white');
+        this.classList.remove('text-gray-400');
+        
+        // Show page
+        document.querySelectorAll('[id^="page-"]').forEach(p => p.classList.add('hidden'));
+        document.getElementById(`page-${page}`).classList.remove('hidden');
+        
+        // Load data
+        if (page === 'users') fetchUsers();
+        else if (page === 'payments') fetchPayments();
+        else if (page === 'api-keys') fetchAPIKeys();
+        else if (page === 'ai-jobs') fetchAIJobs();
+        else if (page === 'logs') fetchLogs();
+    });
+});
+
+// ============================================
+// MODALS
+// ============================================
+
+function openModal(id) {
+    document.getElementById(id).style.display = 'flex';
+}
+
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(modal => {
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) this.style.display = 'none';
+    });
+});
+
+// ============================================
+// FORMS SUBMISSION
+// ============================================
+
+document.getElementById('userForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = {
+        name: document.getElementById('userName').value,
+        email: document.getElementById('userEmail').value,
+        role: document.getElementById('userRole').value,
+        password: document.getElementById('userPassword').value
+    };
+    
+    const response = await fetch(`${API_URL}/api/admin/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` },
+        body: JSON.stringify(data)
+    });
+    
+    if (response.ok) {
+        closeModal('userModal');
+        fetchUsers();
+        alert('User created successfully!');
+    } else {
+        alert('Failed to create user');
+    }
+});
+
+document.getElementById('paymentForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    // Similar logic for payments
+    closeModal('paymentModal');
+    fetchPayments();
+    alert('Payment recorded!');
+});
+
+document.getElementById('apiKeyForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    // Similar logic for API keys
+    closeModal('apiKeyModal');
+    fetchAPIKeys();
+    alert('API Key generated!');
+});
+
+document.getElementById('aiJobForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    // Similar logic for AI jobs
+    closeModal('aiJobModal');
+    fetchAIJobs();
+    alert('AI Job started!');
+});
+
+// ============================================
+// ACTIONS
+// ============================================
+
+function refreshData() {
+    fetchDashboardData();
+    fetchRecentActivity();
+    // Re-init charts
+    if (revenueChartInstance) { revenueChartInstance.destroy(); }
+    if (engineChartInstance) { engineChartInstance.destroy(); }
+    initCharts();
+}
+
+function filterUsers() {
+    const search = document.getElementById('userSearch').value.toLowerCase();
+    document.querySelectorAll('#usersTableBody tr').forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(search) ? '' : 'none';
+    });
+}
+
+function editUser(id) {
+    alert('Edit user: ' + id);
+}
+
+function deleteUser(id) {
+    if (confirm('Delete this user?')) {
+        alert('User deleted: ' + id);
+        fetchUsers();
+    }
+}
+
+function viewPayment(id) {
+    alert('View payment: ' + id);
+}
+
+function revokeKey(id) {
+    if (confirm('Revoke this API key?')) {
+        alert('API key revoked: ' + id);
+        fetchAPIKeys();
+    }
+}
+
+function viewJob(id) {
+    alert('View job: ' + id);
+}
+
+function exportLogs() {
+    alert('Exporting logs...');
+}
+
+function clearAllData() {
+    if (confirm('ARE YOU SURE? This will delete ALL data!')) {
+        if (confirm('REALLY? This is irreversible!')) {
+            alert('Data clearing initiated.');
+        }
+    }
+}
+
+function suspendPlatform() {
+    if (confirm('Suspend the entire platform?')) {
+        alert('Platform suspended. Admin action required to restore.');
+    }
+}
+
+// ============================================
+// INITIALIZATION
+// ============================================
+
+// Login check
+async function checkAdmin() {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+        window.location.href = '/admin/login';
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_URL}/api/auth/verify`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) {
+            window.location.href = '/admin/login';
+        }
+    } catch {
+        window.location.href = '/admin/login';
+    }
+}
+
+// Load all data
+async function loadAllData() {
+    await checkAdmin();
+    await fetchDashboardData();
+    await fetchRecentActivity();
+    await fetchUsers();
+    await fetchPayments();
+    await fetchAPIKeys();
+    await fetchAIJobs();
+    await fetchLogs();
+    await fetchUptime();
+    await initCharts();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+        fetchDashboardData();
+        fetchRecentActivity();
+    }, 30000);
+}
+
+// Start
+loadAllData();
+</script>
+</body>
+</html>

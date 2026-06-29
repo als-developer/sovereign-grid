@@ -1,5 +1,5 @@
-// server.js - Sovereign Grid v31.0 (FULLY FIXED - NO AUTO LOGIN)
-// All buttons working, all pages functional, NO SESSION CACHE
+// server.js - Sovereign Grid v31.0 (FULLY FIXED + REGISTER)
+// All buttons working, registration working, NO AUTO LOGIN!
 
 const express = require('express');
 const cors = require('cors');
@@ -23,6 +23,24 @@ const JWT_SECRET = process.env.JWT_SECRET || 'sovereign-grid-super-secret-key-20
 const JWT_EXPIRY = '24h';
 
 // =====================================================
+// USERS DATABASE (In-memory - in production use real DB)
+// =====================================================
+
+const validUsers = [
+    { email: 'admin@ailifesolution.com', password: 'admin123', role: 'super_admin', name: 'Admin User' },
+    { email: 'admin@sovereigngrid.com', password: 'Sovereign@Admin2026!', role: 'super_admin', name: 'System Admin' },
+    { email: 'tech@sovereigngrid.com', password: 'Tech@Sovereign2026!', role: 'admin', name: 'Tech Admin' },
+    { email: 'finance@sovereigngrid.com', password: 'Finance@Sovereign2026!', role: 'admin', name: 'Finance Admin' },
+    { email: 'investor.lead@sovereigngrid.com', password: 'Investor@Lead2026!', role: 'investor', name: 'Lead Investor' },
+    { email: 'investor.partner@sovereigngrid.com', password: 'Investor@Partner2026!', role: 'investor', name: 'Partner Investor' },
+    { email: 'nmb.bank@sovereigngrid.com', password: 'NMB@Bank2026!', role: 'enterprise', name: 'NMB Bank' },
+    { email: 'vodacom.telecom@sovereigngrid.com', password: 'Vodacom@Telecom2026!', role: 'enterprise', name: 'Vodacom' },
+    { email: 'azam.media@sovereigngrid.com', password: 'Azam@Media2026!', role: 'business', name: 'Azam Media' },
+    { email: 'flutterwave.fintech@sovereigngrid.com', password: 'Flutterwave@Fintech2026!', role: 'enterprise', name: 'Flutterwave' },
+    { email: 'dev.senior@sovereigngrid.com', password: 'Dev@Senior2026!', role: 'developer', name: 'Senior Dev' }
+];
+
+// =====================================================
 // COOKIE PARSER
 // =====================================================
 
@@ -41,7 +59,7 @@ app.use((req, res, next) => {
     res.setHeader('Surrogate-Control', 'no-store');
     
     // Clear ALL cookies on login page
-    if (req.path.includes('/admin/login') || req.path === '/admin/' || req.path === '/admin/force-logout') {
+    if (req.path.includes('/admin/login') || req.path === '/admin/' || req.path === '/admin/force-logout' || req.path === '/register.html') {
         // Clear all cookies
         const cookies = req.headers.cookie;
         if (cookies) {
@@ -141,6 +159,7 @@ app.get('/', (req, res) => {
             version: '/version',
             docs: '/api/docs',
             auth: '/api/auth/login',
+            register: '/api/auth/register',
             admin: '/admin'
         }
     });
@@ -168,6 +187,98 @@ app.get('/version', (req, res) => {
         node_version: process.version,
         uptime: process.uptime()
     });
+});
+
+// =====================================================
+// REGISTER - CREATE NEW USER
+// =====================================================
+
+app.post('/api/auth/register', (req, res) => {
+    try {
+        const { email, password, name, role = 'admin' } = req.body;
+        
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email and password required' });
+        }
+        
+        if (password.length < 6) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters' });
+        }
+        
+        // Check if user already exists
+        const existingUser = validUsers.find(u => u.email === email);
+        if (existingUser) {
+            return res.status(400).json({ error: 'User already exists' });
+        }
+        
+        // Add new user
+        const newUser = {
+            email: email,
+            password: password,
+            role: role || 'admin',
+            name: name || email.split('@')[0]
+        };
+        
+        validUsers.push(newUser);
+        
+        // Generate token
+        const token = jwt.sign(
+            { email: newUser.email, role: newUser.role },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRY }
+        );
+        
+        console.log(`✅ New user registered: ${email} (${role})`);
+        console.log(`📊 Total users: ${validUsers.length}`);
+        
+        res.json({
+            success: true,
+            message: 'User created successfully',
+            token: token,
+            user: {
+                email: newUser.email,
+                role: newUser.role,
+                name: newUser.name
+            }
+        });
+        
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// =====================================================
+// LIST ALL USERS (for testing)
+// =====================================================
+
+app.get('/api/auth/users', (req, res) => {
+    // Remove passwords from response
+    const safeUsers = validUsers.map(u => ({
+        email: u.email,
+        role: u.role,
+        name: u.name || u.email.split('@')[0]
+    }));
+    res.json({ 
+        success: true, 
+        users: safeUsers,
+        total: safeUsers.length
+    });
+});
+
+// =====================================================
+// DELETE USER (for testing)
+// =====================================================
+
+app.delete('/api/auth/users/:email', (req, res) => {
+    const email = req.params.email;
+    const index = validUsers.findIndex(u => u.email === email);
+    
+    if (index === -1) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+    
+    validUsers.splice(index, 1);
+    res.json({ success: true, message: 'User deleted' });
 });
 
 // =====================================================
@@ -250,31 +361,15 @@ app.get('/admin/force-logout', (req, res) => {
             </div>
             <script>
                 function clearAllAndRedirect() {
-                    // Clear localStorage
                     localStorage.clear();
                     sessionStorage.clear();
-                    
-                    // Clear cookies
                     document.cookie.split(";").forEach(function(c) {
                         document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
                         document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/;domain=" + window.location.hostname);
                     });
-                    
-                    // Clear indexedDB
-                    if (window.indexedDB) {
-                        window.indexedDB.databases().then(dbs => {
-                            dbs.forEach(db => window.indexedDB.deleteDatabase(db.name));
-                        });
-                    }
-                    
-                    // Reload to login
                     window.location.href = '/admin/login?cleared=' + Date.now();
                 }
-                
-                // Auto redirect after 2 seconds
                 setTimeout(clearAllAndRedirect, 2000);
-                
-                // Also clear on load
                 clearAllAndRedirect();
             </script>
         </body>
@@ -287,12 +382,10 @@ app.get('/admin/force-logout', (req, res) => {
 // =====================================================
 
 app.get('/admin/login', (req, res) => {
-    // Force no cache
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     
-    // Clear all cookies
     const cookies = req.headers.cookie;
     if (cookies) {
         cookies.split(';').forEach(cookie => {
@@ -308,32 +401,12 @@ app.get('/admin/login', (req, res) => {
 });
 
 // =====================================================
-// AUTH ROUTES
+// AUTH ROUTES - LOGIN
 // =====================================================
 
-// Login
 app.post('/api/auth/login', (req, res) => {
     try {
         const { email, password } = req.body;
-        
-        // Default admin credentials
-        const validUsers = [
-            { email: 'admin@ailifesolution.com', password: 'admin123', role: 'super_admin' },
-            { email: 'admin@sovereigngrid.com', password: 'Sovereign@Admin2026!', role: 'super_admin' },
-            { email: 'tech@sovereigngrid.com', password: 'Tech@Sovereign2026!', role: 'admin' },
-            { email: 'finance@sovereigngrid.com', password: 'Finance@Sovereign2026!', role: 'admin' },
-            { email: 'investor.lead@sovereigngrid.com', password: 'Investor@Lead2026!', role: 'investor' },
-            { email: 'investor.partner@sovereigngrid.com', password: 'Investor@Partner2026!', role: 'investor' },
-            { email: 'investor.minor@sovereigngrid.com', password: 'Investor@Minor2026!', role: 'investor' },
-            { email: 'nmb.bank@sovereigngrid.com', password: 'NMB@Bank2026!', role: 'enterprise' },
-            { email: 'vodacom.telecom@sovereigngrid.com', password: 'Vodacom@Telecom2026!', role: 'enterprise' },
-            { email: 'azam.media@sovereigngrid.com', password: 'Azam@Media2026!', role: 'business' },
-            { email: 'flutterwave.fintech@sovereigngrid.com', password: 'Flutterwave@Fintech2026!', role: 'enterprise' },
-            { email: 'nic.insurance@sovereigngrid.com', password: 'NIC@Insurance2026!', role: 'business' },
-            { email: 'dev.senior@sovereigngrid.com', password: 'Dev@Senior2026!', role: 'developer' },
-            { email: 'dev.junior@sovereigngrid.com', password: 'Dev@Junior2026!', role: 'developer' },
-            { email: 'dev.partner@sovereigngrid.com', password: 'Dev@Partner2026!', role: 'developer' }
-        ];
         
         const user = validUsers.find(u => u.email === email && u.password === password);
         
@@ -341,18 +414,15 @@ app.post('/api/auth/login', (req, res) => {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
         
-        // Generate JWT token
         const token = jwt.sign(
             { email: user.email, role: user.role },
             JWT_SECRET,
             { expiresIn: JWT_EXPIRY }
         );
         
-        // Clear any existing cookies
         res.clearCookie('token', { path: '/' });
         res.clearCookie('session', { path: '/' });
         
-        // Set new cookie (optional - for browser)
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -366,7 +436,8 @@ app.post('/api/auth/login', (req, res) => {
             token: token,
             user: {
                 email: user.email,
-                role: user.role
+                role: user.role,
+                name: user.name || user.email.split('@')[0]
             },
             expiresIn: '24h'
         });
@@ -397,7 +468,6 @@ app.get('/api/auth/verify', authenticate, (req, res) => {
 // TRUTH ENGINE ROUTES
 // =====================================================
 
-// Fact Check
 app.post('/api/truth/check', authenticate, (req, res) => {
     try {
         const { text } = req.body;
@@ -408,21 +478,15 @@ app.post('/api/truth/check', authenticate, (req, res) => {
             });
         }
         
-        // Mock AI verification
-        const keywords = {
-            factual: ['confirmed', 'verified', 'data shows', 'research indicates'],
-            false: ['fake', 'hoax', 'misinformation', 'debunked'],
-            opinion: ['believe', 'think', 'suggest', 'may', 'could']
-        };
-        
         let verdict = 'VERIFIED_TRUE';
         let confidence = 98.5;
-        let sources = ['Trusted Knowledge Base', 'Verified Data Sources'];
+        let sources = ['Trusted Knowledge Base'];
         
         const textLower = text.toLowerCase();
+        const falseKeywords = ['fake', 'hoax', 'misinformation', 'debunked'];
+        const opinionKeywords = ['believe', 'think', 'suggest', 'may', 'could'];
         
-        // Simple classification
-        for (const word of keywords.false) {
+        for (const word of falseKeywords) {
             if (textLower.includes(word)) {
                 verdict = 'VERIFIED_FALSE';
                 confidence = 85.2;
@@ -432,7 +496,7 @@ app.post('/api/truth/check', authenticate, (req, res) => {
         }
         
         if (verdict === 'VERIFIED_TRUE') {
-            for (const word of keywords.opinion) {
+            for (const word of opinionKeywords) {
                 if (textLower.includes(word)) {
                     verdict = 'OPINION_DETECTED';
                     confidence = 92.7;
@@ -442,16 +506,14 @@ app.post('/api/truth/check', authenticate, (req, res) => {
             }
         }
         
-        const result = {
+        res.json({
             success: true,
             verdict: verdict,
             confidence: confidence,
             sources: sources,
             text: text,
             timestamp: new Date().toISOString()
-        };
-        
-        res.json(result);
+        });
         
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -459,10 +521,9 @@ app.post('/api/truth/check', authenticate, (req, res) => {
 });
 
 // =====================================================
-// CENTPAY ROUTES - Payments
+// CENTPAY ROUTES
 // =====================================================
 
-// Charge payment
 app.post('/api/pay/charge', authenticate, (req, res) => {
     try {
         const { amount, currency = 'USD' } = req.body;
@@ -476,7 +537,7 @@ app.post('/api/pay/charge', authenticate, (req, res) => {
         const amountUSD = amount / rate;
         const cashback = amountUSD * 0.05;
         
-        const result = {
+        res.json({
             success: true,
             transaction_id: 'txn_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
             amount: amount,
@@ -487,19 +548,16 @@ app.post('/api/pay/charge', authenticate, (req, res) => {
             cashback_amount: (cashback * rate).toFixed(2),
             status: 'completed',
             timestamp: new Date().toISOString()
-        };
-        
-        res.json(result);
+        });
         
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-// Get balance
 app.get('/api/pay/balance', authenticate, (req, res) => {
     try {
-        const balance = {
+        res.json({
             success: true,
             user_id: req.user?.email || 'admin@ailifesolution.com',
             balance_usd: 247.50,
@@ -507,10 +565,7 @@ app.get('/api/pay/balance', authenticate, (req, res) => {
             balance_kes: (247.50 * 132.20).toFixed(2),
             currency: 'USD',
             updated_at: new Date().toISOString()
-        };
-        
-        res.json(balance);
-        
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -520,7 +575,6 @@ app.get('/api/pay/balance', authenticate, (req, res) => {
 // AI SHRINKER ROUTES
 // =====================================================
 
-// Start compression
 app.post('/api/shrink/compress', authenticate, (req, res) => {
     try {
         const { model_name, precision = 'int4' } = req.body;
@@ -539,7 +593,7 @@ app.post('/api/shrink/compress', authenticate, (req, res) => {
         const model = models[model_name] || { original_gb: 50, compressed_gb: 5 };
         const compression_ratio = (model.original_gb / model.compressed_gb).toFixed(1);
         
-        const result = {
+        res.json({
             success: true,
             job_id: 'job_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8),
             model_name: model_name,
@@ -551,30 +605,7 @@ app.post('/api/shrink/compress', authenticate, (req, res) => {
             estimated_time: '~15 minutes',
             download_url: 'https://sovereign-grid-ailife-a33180041607.herokuapp.com/models/' + model_name.replace(/[^a-zA-Z0-9]/g, '_') + '.gguf',
             timestamp: new Date().toISOString()
-        };
-        
-        res.json(result);
-        
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Get job status
-app.get('/api/shrink/status/:job_id', authenticate, (req, res) => {
-    try {
-        const { job_id } = req.params;
-        
-        const result = {
-            success: true,
-            job_id: job_id,
-            status: 'completed',
-            progress: 100,
-            message: 'Compression completed successfully',
-            timestamp: new Date().toISOString()
-        };
-        
-        res.json(result);
+        });
         
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -585,13 +616,12 @@ app.get('/api/shrink/status/:job_id', authenticate, (req, res) => {
 // ADMIN ROUTES
 // =====================================================
 
-// Dashboard Stats
 app.get('/api/admin/stats', authenticate, (req, res) => {
     try {
-        const stats = {
+        res.json({
             success: true,
-            total_users: 15,
-            active_users: 10,
+            total_users: validUsers.length,
+            active_users: validUsers.length,
             total_revenue: 0,
             total_ai_jobs: 0,
             total_api_calls: 0,
@@ -599,101 +629,83 @@ app.get('/api/admin/stats', authenticate, (req, res) => {
             version: '31.0',
             environment: process.env.NODE_ENV || 'development',
             timestamp: new Date().toISOString()
-        };
-        
-        res.json(stats);
-        
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-// Users List
 app.get('/api/admin/users', authenticate, (req, res) => {
     try {
-        const users = [
-            { id: 1, email: 'admin@ailifesolution.com', name: 'Admin User', role: 'super_admin', status: 'active', created_at: '2026-06-29T00:00:00Z' },
-            { id: 2, email: 'admin@sovereigngrid.com', name: 'System Admin', role: 'super_admin', status: 'active', created_at: '2026-06-29T00:00:00Z' },
-            { id: 3, email: 'tech@sovereigngrid.com', name: 'Tech Admin', role: 'admin', status: 'active', created_at: '2026-06-29T00:00:00Z' },
-            { id: 4, email: 'finance@sovereigngrid.com', name: 'Finance Admin', role: 'admin', status: 'active', created_at: '2026-06-29T00:00:00Z' },
-            { id: 5, email: 'investor.lead@sovereigngrid.com', name: 'Lead Investor', role: 'investor', status: 'active', created_at: '2026-06-29T00:00:00Z' },
-            { id: 6, email: 'investor.partner@sovereigngrid.com', name: 'Partner Investor', role: 'investor', status: 'active', created_at: '2026-06-29T00:00:00Z' },
-            { id: 7, email: 'nmb.bank@sovereigngrid.com', name: 'NMB Bank', role: 'enterprise', status: 'pending', created_at: '2026-06-29T00:00:00Z' },
-            { id: 8, email: 'vodacom.telecom@sovereigngrid.com', name: 'Vodacom', role: 'enterprise', status: 'pending', created_at: '2026-06-29T00:00:00Z' },
-            { id: 9, email: 'azam.media@sovereigngrid.com', name: 'Azam Media', role: 'business', status: 'active', created_at: '2026-06-29T00:00:00Z' },
-            { id: 10, email: 'flutterwave.fintech@sovereigngrid.com', name: 'Flutterwave', role: 'enterprise', status: 'active', created_at: '2026-06-29T00:00:00Z' }
-        ];
-        
+        const users = validUsers.map((u, i) => ({
+            id: i + 1,
+            email: u.email,
+            name: u.name || u.email.split('@')[0],
+            role: u.role,
+            status: 'active',
+            created_at: new Date().toISOString()
+        }));
         res.json({ success: true, users: users, total: users.length });
-        
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-// Payments History
 app.get('/api/admin/payments', authenticate, (req, res) => {
     try {
-        const payments = [
-            { id: 1, user: 'admin@ailifesolution.com', amount: 49.00, currency: 'USD', status: 'completed', date: '2026-06-29T00:00:00Z' },
-            { id: 2, user: 'investor.lead@sovereigngrid.com', amount: 499.00, currency: 'USD', status: 'pending', date: '2026-06-29T00:00:00Z' }
-        ];
-        
-        res.json({ success: true, payments: payments, total: payments.length });
-        
+        res.json({ 
+            success: true, 
+            payments: [
+                { id: 1, user: 'admin@ailifesolution.com', amount: 49.00, currency: 'USD', status: 'completed', date: new Date().toISOString() }
+            ],
+            total: 1
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-// API Keys List
 app.get('/api/admin/apikeys', authenticate, (req, res) => {
     try {
-        const keys = [
-            { id: 1, name: 'Production Key', key: 'sk_sov_live_8coHKYs478Md3iPe6WTBR9GOeBn1N97T2SoQJzNS', status: 'active', created: '2026-06-29T00:00:00Z' },
-            { id: 2, name: 'Development Key', key: 'sk_sov_dev_7x8k9m2n4p6q8r10s12t14u16', status: 'active', created: '2026-06-29T00:00:00Z' },
-            { id: 3, name: 'Partner Key', key: 'sk_sov_dev_5x6y7z8a9b10c11d12e13f14g', status: 'active', created: '2026-06-29T00:00:00Z' }
-        ];
-        
-        res.json({ success: true, keys: keys });
-        
+        res.json({ 
+            success: true, 
+            keys: [
+                { id: 1, name: 'Production Key', key: 'sk_sov_live_8coHKYs478Md3iPe6WTBR9GOeBn1N97T2SoQJzNS', status: 'active', created: new Date().toISOString() }
+            ]
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-// Audit Logs
 app.get('/api/admin/audit', authenticate, (req, res) => {
     try {
-        const logs = [
-            { id: 1, user: 'admin@ailifesolution.com', action: 'Login', timestamp: new Date().toISOString(), details: 'Successful login' },
-            { id: 2, user: 'admin@ailifesolution.com', action: 'API Call', timestamp: new Date().toISOString(), details: 'GET /api/truth/check' },
-            { id: 3, user: 'tech@sovereigngrid.com', action: 'Login', timestamp: new Date().toISOString(), details: 'Successful login' }
-        ];
-        
-        res.json({ success: true, logs: logs });
-        
+        res.json({ 
+            success: true, 
+            logs: [
+                { id: 1, user: 'admin@ailifesolution.com', action: 'Login', timestamp: new Date().toISOString(), details: 'Successful login' }
+            ]
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-// Settings
 app.get('/api/admin/settings', authenticate, (req, res) => {
     try {
-        const settings = {
-            app_name: 'Sovereign Grid',
-            version: '31.0',
-            environment: 'production',
-            maintenance_mode: false,
-            api_rate_limit: 100,
-            payment_gateway: 'PayPal',
-            currency: 'USD',
-            timezone: 'Africa/Dar_es_Salaam'
-        };
-        
-        res.json({ success: true, settings: settings });
-        
+        res.json({
+            success: true,
+            settings: {
+                app_name: 'Sovereign Grid',
+                version: '31.0',
+                environment: 'production',
+                maintenance_mode: false,
+                api_rate_limit: 100,
+                payment_gateway: 'PayPal',
+                currency: 'USD',
+                timezone: 'Africa/Dar_es_Salaam'
+            }
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -703,13 +715,11 @@ app.get('/api/admin/settings', authenticate, (req, res) => {
 // ADMIN DASHBOARD UI
 // =====================================================
 
-// Admin dashboard (main)
 app.get('/admin', (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.sendFile(path.join(__dirname, 'public/admin/index.html'));
 });
 
-// Admin sub-routes
 app.get('/admin/*', (req, res) => {
     const filePath = path.join(__dirname, 'public/admin', req.params[0]);
     const fs = require('fs');
@@ -718,6 +728,15 @@ app.get('/admin/*', (req, res) => {
     }
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.sendFile(path.join(__dirname, 'public/admin/index.html'));
+});
+
+// =====================================================
+// REGISTER PAGE
+// =====================================================
+
+app.get('/register', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.sendFile(path.join(__dirname, 'public/register.html'));
 });
 
 // =====================================================
@@ -756,27 +775,23 @@ app.use((err, req, res, next) => {
 const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('');
     console.log('========================================');
-    console.log('🚀 SOVEREIGN GRID v31.0 - FIXED VERSION');
+    console.log('🚀 SOVEREIGN GRID v31.0 - WITH REGISTER!');
     console.log('========================================');
     console.log(`📍 Server running on: http://localhost:${PORT}`);
     console.log(`🌐 URL: https://sovereign-grid-ailife-a33180041607.herokuapp.com`);
-    console.log(`🔐 Admin Login: http://localhost:${PORT}/admin/login`);
-    console.log(`👑 Admin Dashboard: http://localhost:${PORT}/admin`);
-    console.log(`📖 API Docs: http://localhost:${PORT}/api/docs`);
-    console.log(`🩺 Health: http://localhost:${PORT}/health`);
+    console.log(`🔐 Login: /admin/login`);
+    console.log(`📝 Register: /register`);
+    console.log(`👑 Admin: /admin`);
+    console.log(`📖 API Docs: /api/docs`);
     console.log('========================================');
-    console.log('👤 LOGIN CREDENTIALS:');
-    console.log('   Email: admin@ailifesolution.com');
-    console.log('   Password: admin123');
+    console.log('📝 TO CREATE NEW ACCOUNT:');
+    console.log('   Visit: /register');
+    console.log('   Or use: curl -X POST /api/auth/register');
     console.log('========================================');
-    console.log('📋 OTHER ACCOUNTS:');
-    console.log('   admin@sovereigngrid.com / Sovereign@Admin2026!');
-    console.log('   tech@sovereigngrid.com / Tech@Sovereign2026!');
-    console.log('   investor.lead@sovereigngrid.com / Investor@Lead2026!');
-    console.log('   nmb.bank@sovereigngrid.com / NMB@Bank2026!');
-    console.log('========================================');
-    console.log('🔧 TO FORCE LOGOUT:');
-    console.log('   Visit: /admin/force-logout');
+    console.log('👤 EXISTING USERS:');
+    validUsers.forEach(u => {
+        console.log(`   ${u.email} / ${u.password}`);
+    });
     console.log('========================================');
     console.log('⏰ Server started at:', new Date().toISOString());
     console.log('========================================');

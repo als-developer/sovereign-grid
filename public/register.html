@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Sovereign Grid</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex items-center justify-center">
+
+    <div class="max-w-md w-full mx-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-8">
+            <h1 class="text-2xl font-bold text-center mb-6">🔐 Create Account</h1>
+            
+            <form id="registerForm">
+                <div class="mb-4">
+                    <label class="block text-sm mb-2">Full Name</label>
+                    <input type="text" id="name" value="Zawadi Sanga" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm mb-2">Email Address</label>
+                    <input type="email" id="email" value="zawadi@sovereigngrid.com" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm mb-2">Password</label>
+                    <input type="password" id="password" value="Zawadi@2026!" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm mb-2">Role</label>
+                    <select id="role" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500">
+                        <option value="super_admin">Super Admin</option>
+                        <option value="admin">Admin</option>
+                        <option value="investor">Investor</option>
+                        <option value="enterprise">Enterprise</option>
+                        <option value="developer">Developer</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-semibold transition">Create Account</button>
+            </form>
+            
+            <div id="result" class="mt-4 hidden p-4 bg-gray-800 rounded-xl text-sm"></div>
+            
+            <div class="mt-4 text-center">
+                <a href="/admin/login" class="text-indigo-400 text-sm">Already have an account? Login</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const role = document.getElementById('role').value;
+            const result = document.getElementById('result');
+            
+            result.classList.remove('hidden');
+            result.innerHTML = '⏳ Creating account...';
+            result.className = 'mt-4 p-4 bg-gray-800 rounded-xl text-sm text-yellow-400';
+            
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, role })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.innerHTML = `✅ Account created successfully!<br>Email: ${email}<br>Token: ${data.token.substring(0, 30)}...<br><br><a href="/admin/login" class="text-indigo-400">Go to Login</a>`;
+                    result.className = 'mt-4 p-4 bg-green-900 border border-green-700 rounded-xl text-sm text-green-400';
+                    
+                    // Save token
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                } else {
+                    result.innerHTML = `❌ Error: ${data.error}`;
+                    result.className = 'mt-4 p-4 bg-red-900 border border-red-700 rounded-xl text-sm text-red-400';
+                }
+            } catch (error) {
+                result.innerHTML = `❌ Network error: ${error.message}`;
+                result.className = 'mt-4 p-4 bg-red-900 border border-red-700 rounded-xl text-sm text-red-400';
+            }
+        });
+    </script>
+</body>
+</html>

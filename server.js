@@ -1,4 +1,4 @@
-// server.js - Sovereign Grid v31.0 (WITH REGISTER FIXED)
+// server.js - SOVEREIGN GRID KAMILI (HTML ZOTE ZINAFANYA KAZI!)
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -59,84 +59,91 @@ function authenticate(req, res, next) {
 }
 
 // =====================================================
-// ROUTES
+// SERVE ALL HTML PAGES - SOLUTION!
 // =====================================================
 
-// Home
-app.get('/', (req, res) => {
-    res.json({
-        status: 'ok',
-        message: 'Sovereign Grid is running!',
-        version: '31.0',
-        endpoints: {
-            health: '/health',
-            version: '/version',
-            login: '/api/auth/login',
-            register: '/register',
-            admin: '/admin',
-            docs: '/api/docs'
+// List of all HTML pages to serve
+const htmlPages = [
+    { route: '/', file: 'index.html' },
+    { route: '/index', file: 'index.html' },
+    { route: '/dashboard', file: 'dashboard.html' },
+    { route: '/api-docs', file: 'api_docs.html' },
+    { route: '/login', file: 'login.html' },
+    { route: '/register', file: 'register.html' },
+    { route: '/pricing', file: 'pricing.html' },
+    { route: '/privacy', file: 'privacy_policy.html' },
+    { route: '/terms', file: 'terms_of_service.html' },
+    { route: '/billing', file: 'billing_portal.html' },
+    { route: '/api-keys', file: 'api_keys.html' },
+    { route: '/analytics', file: 'analytics.html' },
+    { route: '/support', file: 'support.html' },
+    { route: '/status', file: 'status.html' },
+    { route: '/webhooks', file: 'webhooks.html' },
+    { route: '/logs', file: 'logs.html' },
+    { route: '/models', file: 'models.html' },
+    { route: '/compress', file: 'compress.html' },
+    { route: '/payments', file: 'payments.html' },
+    { route: '/wallets', file: 'wallets.html' },
+    { route: '/transactions', file: 'transactions.html' },
+    { route: '/referrals', file: 'referrals.html' },
+    { route: '/settings', file: 'settings.html' },
+    { route: '/security', file: 'security.html' },
+    { route: '/notifications', file: 'notifications.html' },
+    { route: '/integrations', file: 'integrations.html' },
+    { route: '/sandbox', file: 'sandbox.html' },
+    { route: '/onboarding', file: 'onboarding.html' },
+    { route: '/forgot-password', file: 'forgot_password.html' },
+    { route: '/team', file: 'team_members.html' },
+    { route: '/paypal-checkout', file: 'paypal_checkout.html' }
+];
+
+// Register all HTML pages
+htmlPages.forEach(({ route, file }) => {
+    app.get(route, (req, res) => {
+        const filePath = path.join(__dirname, 'public', file);
+        if (fs.existsSync(filePath)) {
+            res.sendFile(filePath);
+        } else {
+            res.status(404).send(`<h1>Page not found</h1><p>File: ${file}</p><p><a href="/">Go Home</a></p>`);
         }
     });
 });
 
-// Health
-app.get('/health', (req, res) => {
-    res.json({ 
-        status: 'alive', 
-        version: '31.0', 
-        uptime: process.uptime(),
-        timestamp: new Date().toISOString()
-    });
+// =====================================================
+// ADMIN PAGES
+// =====================================================
+app.get('/admin/login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/admin/login.html'));
 });
 
-// Version
-app.get('/version', (req, res) => {
-    res.json({ 
-        version: '31.0', 
-        environment: process.env.NODE_ENV || 'development' 
-    });
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/admin/index.html'));
 });
 
-// =====================================================
-// REGISTER PAGE ROUTE - FIXED!
-// =====================================================
-
-app.get('/register', (req, res) => {
-    console.log('📝 Register page requested');
-    const registerPath = path.join(__dirname, 'public', 'register.html');
-    
-    // Check if file exists
-    if (fs.existsSync(registerPath)) {
-        console.log('✅ register.html found at:', registerPath);
-        res.sendFile(registerPath);
-    } else {
-        console.log('❌ register.html NOT FOUND at:', registerPath);
-        // List files in public directory for debugging
-        try {
-            const publicFiles = fs.readdirSync(path.join(__dirname, 'public'));
-            console.log('📂 Files in public directory:', publicFiles);
-        } catch (err) {
-            console.log('Could not read public directory:', err.message);
-        }
-        res.status(404).send(`
-            <h1>Register page not found</h1>
-            <p>File: public/register.html</p>
-            <p>Please make sure the file exists.</p>
-            <p><a href="/admin/login">Go to Login →</a></p>
-        `);
+app.get('/admin/*', (req, res) => {
+    const filePath = path.join(__dirname, 'public/admin', req.params[0]);
+    if (fs.existsSync(filePath)) {
+        return res.sendFile(filePath);
     }
+    res.sendFile(path.join(__dirname, 'public/admin/index.html'));
 });
 
 // =====================================================
-// REGISTER API
+// API DOCS
 // =====================================================
+app.get('/api/docs', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/api_docs.html'));
+});
+
+// =====================================================
+// AUTH ROUTES
+// =====================================================
+
+// Register API
 app.post('/api/auth/register', (req, res) => {
     try {
         const { email, password, name, role = 'admin' } = req.body;
         
-        console.log('📝 Registration attempt:', { email, role });
-        
-        // Validation
         if (!email || !password) {
             return res.status(400).json({ error: 'Email and password required' });
         }
@@ -147,56 +154,35 @@ app.post('/api/auth/register', (req, res) => {
             return res.status(400).json({ error: 'Invalid email format' });
         }
         
-        // Check existing user
         const existingUser = validUsers.find(u => u.email === email);
         if (existingUser) {
             return res.status(400).json({ error: 'User already exists' });
         }
         
-        // Add new user
-        const newUser = {
-            email: email,
-            password: password,
-            role: role,
-            name: name || email.split('@')[0]
-        };
+        const newUser = { email, password, role, name: name || email.split('@')[0] };
         validUsers.push(newUser);
         
-        // Generate token
         const token = jwt.sign(
             { email: newUser.email, role: newUser.role },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
         
-        console.log(`✅ New user registered: ${email} (${role})`);
-        console.log(`📊 Total users: ${validUsers.length}`);
-        
         res.json({
             success: true,
             message: 'User created successfully',
             token: token,
-            user: {
-                email: newUser.email,
-                role: newUser.role,
-                name: newUser.name
-            }
+            user: { email: newUser.email, role: newUser.role, name: newUser.name }
         });
-        
     } catch (error) {
-        console.error('Registration error:', error);
-        res.status(500).json({ error: error.message || 'Internal server error' });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// =====================================================
-// LOGIN
-// =====================================================
+// Login API
 app.post('/api/auth/login', (req, res) => {
     try {
         const { email, password } = req.body;
-        
-        console.log('🔐 Login attempt:', email);
         
         if (!email || !password) {
             return res.status(400).json({ error: 'Email and password required' });
@@ -214,22 +200,14 @@ app.post('/api/auth/login', (req, res) => {
             { expiresIn: '24h' }
         );
         
-        console.log(`✅ Login successful: ${email}`);
-        
         res.json({
             success: true,
             token: token,
-            user: {
-                email: user.email,
-                role: user.role,
-                name: user.name || user.email.split('@')[0]
-            },
+            user: { email: user.email, role: user.role, name: user.name },
             expiresIn: '24h'
         });
-        
     } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ error: error.message || 'Internal server error' });
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -240,11 +218,7 @@ app.post('/api/auth/logout', (req, res) => {
 
 // Verify token
 app.get('/api/auth/verify', authenticate, (req, res) => {
-    res.json({ 
-        success: true, 
-        user: req.user,
-        timestamp: new Date().toISOString()
-    });
+    res.json({ success: true, user: req.user });
 });
 
 // List users
@@ -271,10 +245,10 @@ app.post('/api/truth/check', authenticate, (req, res) => {
         let confidence = 98.5;
         const textLower = text.toLowerCase();
         
-        if (textLower.includes('fake') || textLower.includes('hoax')) {
+        if (textLower.includes('fake') || textLower.includes('hoax') || textLower.includes('misinformation')) {
             verdict = 'VERIFIED_FALSE';
             confidence = 85.2;
-        } else if (textLower.includes('believe') || textLower.includes('think')) {
+        } else if (textLower.includes('believe') || textLower.includes('think') || textLower.includes('suggest')) {
             verdict = 'OPINION_DETECTED';
             confidence = 92.7;
         }
@@ -308,7 +282,7 @@ app.post('/api/pay/charge', authenticate, (req, res) => {
         
         res.json({
             success: true,
-            transaction_id: 'txn_' + Date.now(),
+            transaction_id: 'txn_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
             amount: amount,
             currency: currency.toUpperCase(),
             amount_usd: amountUSD.toFixed(4),
@@ -324,10 +298,46 @@ app.post('/api/pay/charge', authenticate, (req, res) => {
 app.get('/api/pay/balance', authenticate, (req, res) => {
     res.json({
         success: true,
+        user_id: req.user?.email || 'admin@ailifesolution.com',
         balance_usd: 247.50,
         balance_tzs: (247.50 * 2615.50).toFixed(2),
         currency: 'USD'
     });
+});
+
+// =====================================================
+// AI SHRINKER
+// =====================================================
+app.post('/api/shrink/compress', authenticate, (req, res) => {
+    try {
+        const { model_name, precision = 'int4' } = req.body;
+        if (!model_name) {
+            return res.status(400).json({ error: 'Model name required' });
+        }
+        
+        const models = {
+            'Llama-3-70B': { original_gb: 140, compressed_gb: 14 },
+            'Mistral-7B': { original_gb: 14, compressed_gb: 1.4 }
+        };
+        
+        const model = models[model_name] || { original_gb: 50, compressed_gb: 5 };
+        const compression_ratio = (model.original_gb / model.compressed_gb).toFixed(1);
+        
+        res.json({
+            success: true,
+            job_id: 'job_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8),
+            model_name: model_name,
+            original_size_gb: model.original_gb,
+            compressed_size_gb: model.compressed_gb,
+            compression_ratio: compression_ratio + 'x',
+            precision: precision,
+            status: 'processing',
+            estimated_time: '~15 minutes',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // =====================================================
@@ -389,32 +399,6 @@ app.get('/api/admin/settings', authenticate, (req, res) => {
 });
 
 // =====================================================
-// ADMIN PAGES
-// =====================================================
-app.get('/admin/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/admin/login.html'));
-});
-
-app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/admin/index.html'));
-});
-
-app.get('/admin/*', (req, res) => {
-    const filePath = path.join(__dirname, 'public/admin', req.params[0]);
-    if (fs.existsSync(filePath)) {
-        return res.sendFile(filePath);
-    }
-    res.sendFile(path.join(__dirname, 'public/admin/index.html'));
-});
-
-// =====================================================
-// API DOCS
-// =====================================================
-app.get('/api/docs', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/api-docs.html'));
-});
-
-// =====================================================
 // FORCE LOGOUT
 // =====================================================
 app.get('/admin/force-logout', (req, res) => {
@@ -428,7 +412,7 @@ app.get('/admin/force-logout', (req, res) => {
             document.cookie.split(";").forEach(function(c) {
                 document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
             });
-            window.location.href = '/admin/login?cleared=' + Date.now();
+            window.location.href = '/login?cleared=' + Date.now();
         </script>
         </head>
         <body style="background:#0a0a0f;color:#e0e0e0;font-family:Arial;display:flex;justify-content:center;align-items:center;height:100vh;">
@@ -446,15 +430,7 @@ app.use((req, res) => {
     res.status(404).json({ 
         error: 'Endpoint not found', 
         path: req.path,
-        method: req.method,
-        available: {
-            health: '/health',
-            version: '/version',
-            login: '/api/auth/login',
-            register: '/register',
-            admin: '/admin',
-            docs: '/api/docs'
-        }
+        method: req.method
     });
 });
 
@@ -472,21 +448,17 @@ app.use((err, req, res, next) => {
 app.listen(PORT, '0.0.0.0', () => {
     console.log('');
     console.log('========================================');
-    console.log('🚀 SOVEREIGN GRID v31.0 RUNNING');
+    console.log('🚀 SOVEREIGN GRID v31.0 - HTML ZOTE ZINAFANYA KAZI!');
     console.log('========================================');
     console.log(`📍 Port: ${PORT}`);
     console.log(`🌐 URL: https://sovereign-grid-ailife-a33180041607.herokuapp.com`);
-    console.log(`📝 Register: /register`);
-    console.log(`🔐 Login: /admin/login`);
-    console.log(`👑 Admin: /admin`);
-    console.log(`📖 API Docs: /api/docs`);
     console.log('========================================');
-    console.log('👤 EXISTING ACCOUNTS:');
-    validUsers.forEach(u => {
-        console.log(`   ${u.email} / ${u.password}`);
+    console.log('📄 HTML PAGES AVAILABLE:');
+    htmlPages.forEach(({ route, file }) => {
+        console.log(`   ${route} → ${file}`);
     });
     console.log('========================================');
-    console.log('⏰ Started at:', new Date().toISOString());
+    console.log('👤 LOGIN: admin@ailifesolution.com / admin123');
     console.log('========================================');
 });
 

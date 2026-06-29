@@ -62,7 +62,8 @@ router.post('/register', async (req, res) => {
             name: name || '',
             company: company || '',
             created_at: new Date().toISOString(),
-            role: email === ADMIN_USERNAME ? 'admin' : 'user'
+            role: email === ADMIN_USERNAME ? 'admin' : 'user',
+            status: 'active'
         });
 
         // Create JWT token
@@ -89,7 +90,7 @@ router.post('/register', async (req, res) => {
     }
 });
 
-// Login user (Firebase)
+// Login user
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -98,18 +99,15 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ error: 'Email and password required' });
         }
 
-        // Firebase Admin SDK doesn't support login directly
-        // Use Firebase Client SDK for login, or custom token generation
-
-        // For now, check if user exists
+        // Check if user exists in Firebase Database
         const { db } = require('../config/firebase');
-        const users = await db.ref('users').once('value');
-        const userData = users.val();
+        const usersSnapshot = await db.ref('users').once('value');
+        const users = usersSnapshot.val() || {};
         
         let foundUser = null;
         let foundUid = null;
         
-        for (const [uid, data] of Object.entries(userData || {})) {
+        for (const [uid, data] of Object.entries(users)) {
             if (data.email === email) {
                 foundUser = data;
                 foundUid = uid;
@@ -118,7 +116,32 @@ router.post('/login', async (req, res) => {
         }
 
         if (!foundUser) {
-            return res.status(401).json({ error: 'User not found' });
+            // Try to create user if doesn't exist (for demo)
+            if (email === 'admin@ailifesolution.com') {
+                // Create admin user
+                const { auth } = require('../config/firebase');
+                let userRecord;
+                try {
+                    userRecord = await auth.getUserByEmail(email);
+                } catch {
+                    userRecord = await auth.createUser({
+                        email,
+                        password: password || 'admin123',
+                        displayName: 'Admin'
+                    });
+                }
+                foundUid = userRecord.uid;
+                foundUser = { 
+                    email, 
+                    name: 'Admin', 
+                    role: 'admin', 
+                    status: 'active',
+                    created_at: new Date().toISOString()
+                };
+                await db.ref(`users/${foundUid}`).set(foundUser);
+            } else {
+                return res.status(401).json({ error: 'Invalid credentials' });
+            }
         }
 
         // Create JWT token
@@ -142,6 +165,28 @@ router.post('/login', async (req, res) => {
     } catch (error) {
         console.error('Login error:', error);
         res.status(400).json({ error: error.message });
+    }
+});
+
+// Verify token
+router.get('/verify', verifyToken, async (req, res) => {
+    try {
+        const { db } = require('../config/firebase');
+        const userData = await db.ref(`users/${req.user.uid}`).once('value');
+        const user = userData.val() || {};
+        
+        res.json({
+            success: true,
+            user: {
+                uid: req.user.uid,
+                email: req.user.email,
+                role: req.user.role,
+                name: user.name || '',
+                ...user
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -202,6 +247,11 @@ router.get('/users', verifyToken, async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+});
+
+// Logout - client side only, but provide endpoint
+router.post('/logout', (req, res) => {
+    res.json({ success: true, message: 'Logged out successfully' });
 });
 
 module.exports = {

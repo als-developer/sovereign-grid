@@ -2,14 +2,31 @@
 // Inatumia Firebase Realtime Database na Authentication
 
 const admin = require('firebase-admin');
-const serviceAccount = require('./serviceAccountKey.json'); // Pakua kutoka Firebase Console
+const path = require('path');
+
+// Try to load service account
+let serviceAccount = null;
+try {
+    serviceAccount = require('./serviceAccountKey.json');
+} catch (e) {
+    console.warn('⚠️ Service account key not found, using environment variables');
+}
 
 // Initialize Firebase Admin SDK
 if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        databaseURL: process.env.FIREBASE_URL || 'https://city-22282-default-rtdb.firebaseio.com'
-    });
+    if (serviceAccount) {
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+            databaseURL: process.env.FIREBASE_URL || 'https://city-22282-default-rtdb.firebaseio.com'
+        });
+    } else {
+        // Use environment variables for Firebase
+        admin.initializeApp({
+            credential: admin.credential.applicationDefault(),
+            databaseURL: process.env.FIREBASE_URL || 'https://city-22282-default-rtdb.firebaseio.com'
+        });
+    }
+    console.log('✅ Firebase Admin SDK initialized');
 }
 
 const db = admin.database();
@@ -30,6 +47,9 @@ module.exports = {
     },
     getUser: async (uid) => {
         return await auth.getUser(uid);
+    },
+    getUserByEmail: async (email) => {
+        return await auth.getUserByEmail(email);
     },
     deleteUser: async (uid) => {
         return await auth.deleteUser(uid);

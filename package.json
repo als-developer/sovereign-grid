@@ -1,0 +1,31 @@
+{
+  "name": "sovereign-grid",
+  "version": "31.0.0",
+  "description": "Sovereign Grid - AI Infrastructure Platform for Heroku",
+  "main": "server.js",
+  "engines": {
+    "node": "18.x",
+    "npm": "9.x"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "echo '📦 Installing Python dependencies...' && pip install -r requirements.txt || echo '⚠️ Pip install failed, continuing...'"
+  },
+  "dependencies": {
+    "http": "^0.0.1-security"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/sovereign-grid.git"
+  },
+  "keywords": [
+    "ai",
+    "fastapi",
+    "payments",
+    "heroku"
+  ],
+  "author": "Sovereign Grid Team",
+  "license": "Commercial"
+}

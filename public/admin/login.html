@@ -3,95 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login | Sovereign Grid</title>
+    <title>Sovereign Grid - Admin Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
-        body { background: #0a0e17; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .login-card { background: #111927; border: 1px solid #1a2332; border-radius: 16px; }
-        .input-field { background: #0d1520; border: 1px solid #1a2332; border-radius: 8px; padding: 12px 16px; color: #fff; width: 100%; }
-        .input-field:focus { outline: none; border-color: #4f46e5; }
-        .btn-primary { background: #4f46e5; padding: 12px; border-radius: 8px; border: none; color: #fff; font-weight: 600; cursor: pointer; transition: all 0.3s; width: 100%; }
-        .btn-primary:hover { background: #4338ca; }
-        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        body {
+            background: #0a0a0f;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .login-card {
+            background: #111118;
+            border: 1px solid #1a1a2e;
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .login-card h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6366f1, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+        .login-card .subtitle {
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        .login-card label {
+            display: block;
+            color: #9ca3af;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .login-card input {
+            width: 100%;
+            padding: 10px 14px;
+            background: #0d0d15;
+            border: 1px solid #1a1a2e;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 14px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        .login-card input:focus {
+            border-color: #6366f1;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: #6366f1;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .login-btn:hover {
+            background: #4f46e5;
+        }
+        .error-msg {
+            color: #ef4444;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 8px;
+            display: none;
+        }
+        .test-accounts {
+            margin-top: 16px;
+            padding: 12px;
+            background: #0d0d15;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .test-accounts code {
+            display: block;
+            color: #9ca3af;
+            font-size: 11px;
+            padding: 2px 0;
+        }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen">
-
-    <div class="login-card p-8 max-w-md w-full mx-4">
-        <div class="text-center mb-8">
-            <span class="text-3xl">⚡</span>
-            <h1 class="text-2xl font-bold mt-2 bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">Admin Login</h1>
-            <p class="text-gray-400 text-sm mt-1">Enter your credentials to access the dashboard</p>
-        </div>
-
-        <form id="loginForm">
-            <div class="mb-4">
-                <label class="text-sm text-gray-400 block mb-1">Email</label>
-                <input type="email" class="input-field" id="adminEmail" placeholder="admin@ailifesolution.com" required>
+<body>
+    <div class="login-card">
+        <h1>⚡ Sovereign Grid</h1>
+        <p class="subtitle">Admin Login · v31.0</p>
+        
+        <form id="loginForm" style="margin-top: 24px;">
+            <div style="margin-bottom: 16px;">
+                <label>Email Address</label>
+                <input type="email" id="email" value="admin@ailifesolution.com" required>
             </div>
-            <div class="mb-6">
-                <label class="text-sm text-gray-400 block mb-1">Password</label>
-                <input type="password" class="input-field" id="adminPassword" placeholder="••••••••" required>
+            <div style="margin-bottom: 20px;">
+                <label>Password</label>
+                <input type="password" id="password" value="admin123" required>
             </div>
-            <button type="submit" class="btn-primary" id="loginBtn">
-                <i class="fas fa-sign-in-alt"></i> Sign In
-            </button>
+            <button type="submit" class="login-btn">🔐 Sign In</button>
+            <div id="errorMsg" class="error-msg"></div>
         </form>
-
-        <div id="errorMsg" class="mt-4 text-red-400 text-sm text-center hidden"></div>
-
-        <div class="mt-6 text-center text-xs text-gray-500">
-            <p>Default: admin@ailifesolution.com / admin123</p>
-            <p class="mt-1">🔒 Secure JWT authentication</p>
+        
+        <div class="test-accounts">
+            <strong style="color:#9ca3af;">📋 Test Accounts:</strong>
+            <code>admin@ailifesolution.com / admin123</code>
+            <code>admin@sovereigngrid.com / Sovereign@Admin2026!</code>
+            <code>tech@sovereigngrid.com / Tech@Sovereign2026!</code>
+            <code>investor.lead@sovereigngrid.com / Investor@Lead2026!</code>
         </div>
     </div>
 
     <script>
-        const API_URL = window.location.origin;
-
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const email = document.getElementById('adminEmail').value;
-            const password = document.getElementById('adminPassword').value;
-            const btn = document.getElementById('loginBtn');
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
             const errorMsg = document.getElementById('errorMsg');
-
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
-            errorMsg.classList.add('hidden');
-
+            
+            errorMsg.style.display = 'none';
+            
             try {
-                const response = await fetch(`${API_URL}/api/auth/login`, {
+                const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
-
+                
                 const data = await response.json();
-
-                if (data.success && data.user?.role === 'admin') {
-                    localStorage.setItem('adminToken', data.token);
-                    localStorage.setItem('adminUser', JSON.stringify(data.user));
+                
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
                     window.location.href = '/admin';
                 } else {
-                    errorMsg.classList.remove('hidden');
-                    errorMsg.textContent = 'Invalid credentials or insufficient permissions';
+                    errorMsg.textContent = data.error || 'Invalid credentials';
+                    errorMsg.style.display = 'block';
                 }
             } catch (error) {
-                errorMsg.classList.remove('hidden');
                 errorMsg.textContent = 'Network error. Please try again.';
+                errorMsg.style.display = 'block';
             }
-
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
         });
-
-        // Auto-redirect if already logged in
-        if (localStorage.getItem('adminToken')) {
-            window.location.href = '/admin';
-        }
     </script>
 </body>
 </html>

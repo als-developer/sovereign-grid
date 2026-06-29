@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sovereign Grid - Navigation Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: #0a0a0f;
+            font-family: 'Inter', sans-serif;
+        }
+        .hub-card {
+            background: #111118;
+            border: 1px solid #1a1a2e;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 1200px;
+            margin: 20px auto;
+        }
+        .hub-card h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6366f1, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+        .hub-card .subtitle {
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        .section-title {
+            color: #9ca3af;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 20px 0 12px 0;
+            border-bottom: 1px solid #1a1a2e;
+            padding-bottom: 8px;
+        }
+        .page-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .page-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: #0d0d15;
+            border: 1px solid #1a1a2e;
+            border-radius: 8px;
+            color: #e0e0e0;
+            text-decoration: none;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .page-btn:hover {
+            border-color: #6366f1;
+            background: #1a1a2e;
+            transform: translateY(-2px);
+        }
+        .page-btn .icon {
+            font-size: 18px;
+        }
+        .page-btn .status {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        .status.working { background: #064e3b; color: #34d399; }
+        .status.pending { background: #1e1b4b; color: #818cf8; }
+        .status.error { background: #7f1d1d; color: #fca5a5; }
+        .status-legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 15px 0;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .status-legend span { display: flex; align-items: center; gap: 6px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .dot.green { background: #34d399; }
+        .dot.blue { background: #818cf8; }
+        .dot.red { background: #fca5a5; }
+        .url-box {
+            background: #0d0d15;
+            border: 1px solid #1a1a2e;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-family: monospace;
+            font-size: 13px;
+            color: #818cf8;
+            word-break: break-all;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .url-box span { color: #6b7280; }
+        .copy-btn {
+            background: transparent;
+            border: 1px solid #1a1a2e;
+            color: #9ca3af;
+            padding: 4px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+        .copy-btn:hover { border-color: #6366f1; color: #e0e0e0; }
+    </style>
+</head>
+<body>
+
+<div class="hub-card">
+    <h1>⚡ Sovereign Grid</h1>
+    <p class="subtitle">Navigation Hub — Bonyeza page yoyote kufungua</p>
+    
+    <div class="url-box">
+        <span>🌐 Base URL:</span> https://sovereign-grid-ailife-a33180041607.herokuapp.com
+        <button class="copy-btn" onclick="copyUrl()">📋 Copy</button>
+    </div>
+
+    <div class="status-legend">
+        <span><span class="dot green"></span> Working</span>
+        <span><span class="dot blue"></span> Pending Test</span>
+        <span><span class="dot red"></span> Needs Fix</span>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- SECTION 1: HOME & LANDING -->
+    <!-- ===================================================== -->
+    <div class="section-title">🏠 Home & Landing</div>
+    <div class="page-grid">
+        <a href="/" class="page-btn"><span class="icon">🏠</span> Home <span class="status working">✅</span></a>
+        <a href="/index" class="page-btn"><span class="icon">📄</span> Index <span class="status working">✅</span></a>
+        <a href="/dashboard" class="page-btn"><span class="icon">📊</span> Dashboard <span class="status pending">⏳</span></a>
+        <a href="/api-docs" class="page-btn"><span class="icon">📖</span> API Docs <span class="status working">✅</span></a>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- SECTION 2: AUTHENTICATION -->
+    <!-- ===================================================== -->
+    <div class="section-title">🔐 Authentication</div>
+    <div class="page-grid">
+        <a href="/login" class="page-btn"><span class="icon">🔑</span> Login <span class="status pending">⏳</span></a>
+        <a href="/register" class="page-btn"><span class="icon">📝</span> Register <span class="status working">✅</span></a>
+        <a href="/forgot-password" class="page-btn"><span class="icon">🔄</span> Forgot Password <span class="status pending">⏳</span></a>
+        <a href="/admin/login" class="page-btn"><span class="icon">👑</span> Admin Login <span class="status working">✅</span></a>
+        <a href="/admin" class="page-btn"><span class="icon">📊</span> Admin Dashboard <span class="status working">✅</span></a>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- SECTION 3: BILLING & PAYMENTS -->
+    <!-- ===================================================== -->
+    <div class="section-title">💰 Billing & Payments</div>
+    <div class="page-grid">
+        <a href="/pricing" class="page-btn"><span class="icon">💲</span> Pricing <span class="status pending">⏳</span></a>
+        <a href="/billing" class="page-btn"><span class="icon">🧾</span> Billing Portal <span class="status pending">⏳</span></a>
+        <a href="/payments" class="page-btn"><span class="icon">💳</span> Payments <span class="status pending">⏳</span></a>
+        <a href="/wallets" class="page-btn"><span class="icon">👛</span> Wallets <span class="status pending">⏳</span></a>
+        <a href="/transactions" class="page-btn"><span class="icon">📊</span> Transactions <span class="status pending">⏳</span></a>
+        <a href="/paypal-checkout" class="page-btn"><span class="icon">💸</span> PayPal Checkout <span class="status pending">⏳</span></a>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- SECTION 4: API & DEVELOPMENT -->
+    <!-- ===================================================== -->
+    <div class="section-title">🔑 API & Development</div>
+    <div class="page-grid">
+        <a href="/api-keys" class="page-btn"><span class="icon">🔐</span> API Keys <span class="status pending">⏳</span></a>
+        <a href="/sandbox" class="page-btn"><span class="icon">🧪</span> Sandbox <span class="status pending">⏳</span></a>
+        <a href="/webhooks" class="page-btn"><span class="icon">🔔</span> Webhooks <span class="status pending">⏳</span></a>
+        <a href="/logs" class="page-btn"><span class="icon">📜</span> Logs <span class="status pending">⏳</span></a>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- SECTION 5: AI & MODELS -->
+    <!-- ===================================================== -->
+    <div class="section-title">🤖 AI & Models</div>
+    <div class="page-grid">
+        <a href="/models" class="page-btn"><span class="icon">🧠</span> Models <span class="status pending">⏳</span></a>
+        <a href="/compress" class="page-btn"><span class="icon">📦</span> Compress <span class="status pending">⏳</span></a>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- SECTION 6: ANALYTICS & STATUS -->
+    <!-- ===================================================== -->
+    <div class="section-title">📊 Analytics & Status</div>
+    <div class="page-grid">
+        <a href="/analytics" class="page-btn"><span class="icon">📈</span> Analytics <span class="status pending">⏳</span></a>
+        <a href="/status" class="page-btn"><span class="icon">📡</span> System Status <span class="status pending">⏳</span></a>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- SECTION 7: TEAM & SUPPORT -->
+    <!-- ===================================================== -->
+    <div class="section-title">👥 Team & Support</div>
+    <div class="page-grid">
+        <a href="/team" class="page-btn"><span class="icon">👥</span> Team Members <span class="status pending">⏳</span></a>
+        <a href="/support" class="page-btn"><span class="icon">🆘</span> Support <span class="status pending">⏳</span></a>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- SECTION 8: SETTINGS & SECURITY -->
+    <!-- ===================================================== -->
+    <div class="section-title">⚙️ Settings & Security</div>
+    <div class="page-grid">
+        <a href="/settings" class="page-btn"><span class="icon">⚙️</span> Settings <span class="status pending">⏳</span></a>
+        <a href="/security" class="page-btn"><span class="icon">🛡️</span> Security <span class="status pending">⏳</span></a>
+        <a href="/notifications" class="page-btn"><span class="icon">🔔</span> Notifications <span class="status pending">⏳</span></a>
+        <a href="/integrations" class="page-btn"><span class="icon">🔗</span> Integrations <span class="status pending">⏳</span></a>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- SECTION 9: LEGAL -->
+    <!-- ===================================================== -->
+    <div class="section-title">📜 Legal</div>
+    <div class="page-grid">
+        <a href="/privacy" class="page-btn"><span class="icon">🔒</span> Privacy Policy <span class="status pending">⏳</span></a>
+        <a href="/terms" class="page-btn"><span class="icon">📄</span> Terms of Service <span class="status pending">⏳</span></a>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- SECTION 10: ONBOARDING & REFERRALS -->
+    <!-- ===================================================== -->
+    <div class="section-title">🚀 Onboarding & Referrals</div>
+    <div class="page-grid">
+        <a href="/onboarding" class="page-btn"><span class="icon">🎯</span> Onboarding <span class="status pending">⏳</span></a>
+        <a href="/referrals" class="page-btn"><span class="icon">🎁</span> Referrals <span class="status pending">⏳</span></a>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- FOOTER -->
+    <!-- ===================================================== -->
+    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #1a1a2e; text-align: center; font-size: 12px; color: #6b7280;">
+        <p>🔐 Default Login: <strong style="color:#9ca3af;">admin@ailifesolution.com</strong> / <strong style="color:#9ca3af;">admin123</strong></p>
+        <p style="margin-top: 4px;">📝 Register new account: <a href="/register" style="color:#6366f1;">/register</a></p>
+        <p style="margin-top: 8px;">© 2026 Sovereign Grid Systems · v31.0</p>
+    </div>
+</div>
+
+<script>
+    function copyUrl() {
+        const url = 'https://sovereign-grid-ailife-a33180041607.herokuapp.com';
+        navigator.clipboard.writeText(url).then(() => {
+            alert('✅ URL copied to clipboard!');
+        });
+    }
+</script>
+
+</body>
+</html>

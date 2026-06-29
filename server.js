@@ -59,55 +59,59 @@ function authenticate(req, res, next) {
 }
 
 // =====================================================
-// SERVE ALL HTML PAGES - SOLUTION!
+// SERVE ALL HTML PAGES - FIX!
 // =====================================================
 
-// List of all HTML pages to serve
-const htmlPages = [
-    { route: '/', file: 'index.html' },
-    { route: '/index', file: 'index.html' },
-    { route: '/dashboard', file: 'dashboard.html' },
-    { route: '/api-docs', file: 'api_docs.html' },
-    { route: '/login', file: 'login.html' },
-    { route: '/register', file: 'register.html' },
-    { route: '/pricing', file: 'pricing.html' },
-    { route: '/privacy', file: 'privacy_policy.html' },
-    { route: '/terms', file: 'terms_of_service.html' },
-    { route: '/billing', file: 'billing_portal.html' },
-    { route: '/api-keys', file: 'api_keys.html' },
-    { route: '/analytics', file: 'analytics.html' },
-    { route: '/support', file: 'support.html' },
-    { route: '/status', file: 'status.html' },
-    { route: '/webhooks', file: 'webhooks.html' },
-    { route: '/logs', file: 'logs.html' },
-    { route: '/models', file: 'models.html' },
-    { route: '/compress', file: 'compress.html' },
-    { route: '/payments', file: 'payments.html' },
-    { route: '/wallets', file: 'wallets.html' },
-    { route: '/transactions', file: 'transactions.html' },
-    { route: '/referrals', file: 'referrals.html' },
-    { route: '/settings', file: 'settings.html' },
-    { route: '/security', file: 'security.html' },
-    { route: '/notifications', file: 'notifications.html' },
-    { route: '/integrations', file: 'integrations.html' },
-    { route: '/sandbox', file: 'sandbox.html' },
-    { route: '/onboarding', file: 'onboarding.html' },
-    { route: '/forgot-password', file: 'forgot_password.html' },
-    { route: '/team', file: 'team_members.html' },
-    { route: '/paypal-checkout', file: 'paypal_checkout.html' }
-];
-
-// Register all HTML pages
-htmlPages.forEach(({ route, file }) => {
-    app.get(route, (req, res) => {
-        const filePath = path.join(__dirname, 'public', file);
+// Function to serve HTML pages
+function servePage(pageName) {
+    return (req, res) => {
+        const filePath = path.join(__dirname, 'public', pageName);
         if (fs.existsSync(filePath)) {
             res.sendFile(filePath);
         } else {
-            res.status(404).send(`<h1>Page not found</h1><p>File: ${file}</p><p><a href="/">Go Home</a></p>`);
+            res.status(404).send(`
+                <h1>Page not found</h1>
+                <p>File: ${pageName}</p>
+                <p><a href="/">Go Home</a></p>
+            `);
         }
-    });
-});
+    };
+}
+
+// Register ALL HTML pages
+app.get('/', servePage('index.html'));
+app.get('/index', servePage('index.html'));
+app.get('/dashboard', servePage('dashboard.html'));
+app.get('/api-docs', servePage('api_docs.html'));
+app.get('/login', servePage('login.html'));
+app.get('/register', servePage('register.html'));
+app.get('/pricing', servePage('pricing.html'));
+app.get('/privacy', servePage('privacy_policy.html'));
+app.get('/terms', servePage('terms_of_service.html'));
+app.get('/billing', servePage('billing_portal.html'));
+app.get('/api-keys', servePage('api_keys.html'));
+app.get('/analytics', servePage('analytics.html'));
+app.get('/support', servePage('support.html'));
+app.get('/status', servePage('status.html'));
+app.get('/webhooks', servePage('webhooks.html'));
+app.get('/logs', servePage('logs.html'));
+app.get('/models', servePage('models.html'));
+app.get('/compress', servePage('compress.html'));
+app.get('/payments', servePage('payments.html'));
+app.get('/wallets', servePage('wallets.html'));
+app.get('/transactions', servePage('transactions.html'));
+app.get('/referrals', servePage('referrals.html'));
+app.get('/settings', servePage('settings.html'));
+app.get('/security', servePage('security.html'));
+app.get('/notifications', servePage('notifications.html'));
+app.get('/integrations', servePage('integrations.html'));
+app.get('/sandbox', servePage('sandbox.html'));
+app.get('/onboarding', servePage('onboarding.html'));
+app.get('/forgot-password', servePage('forgot_password.html'));
+app.get('/team', servePage('team_members.html'));
+app.get('/paypal-checkout', servePage('paypal_checkout.html'));
+app.get('/navigation', servePage('navigation.html'));
+app.get('/navigation.html', servePage('navigation.html'));
 
 // =====================================================
 // ADMIN PAGES
@@ -399,34 +403,9 @@ app.get('/api/admin/settings', authenticate, (req, res) => {
 });
 
 // =====================================================
-// FORCE LOGOUT
-// =====================================================
-app.get('/admin/force-logout', (req, res) => {
-    res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head><title>Logging out...</title>
-        <script>
-            localStorage.clear();
-            sessionStorage.clear();
-            document.cookie.split(";").forEach(function(c) {
-                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-            });
-            window.location.href = '/login?cleared=' + Date.now();
-        </script>
-        </head>
-        <body style="background:#0a0a0f;color:#e0e0e0;font-family:Arial;display:flex;justify-content:center;align-items:center;height:100vh;">
-            <h2>🚪 Logging out...</h2>
-        </body>
-        </html>
-    `);
-});
-
-// =====================================================
 // ERROR HANDLING
 // =====================================================
 app.use((req, res) => {
-    console.log('❌ 404 Not Found:', req.method, req.path);
     res.status(404).json({ 
         error: 'Endpoint not found', 
         path: req.path,
@@ -448,15 +427,36 @@ app.use((err, req, res, next) => {
 app.listen(PORT, '0.0.0.0', () => {
     console.log('');
     console.log('========================================');
-    console.log('🚀 SOVEREIGN GRID v31.0 - HTML ZOTE ZINAFANYA KAZI!');
+    console.log('🚀 SOVEREIGN GRID v31.0 - FULLY WORKING!');
     console.log('========================================');
     console.log(`📍 Port: ${PORT}`);
     console.log(`🌐 URL: https://sovereign-grid-ailife-a33180041607.herokuapp.com`);
     console.log('========================================');
     console.log('📄 HTML PAGES AVAILABLE:');
-    htmlPages.forEach(({ route, file }) => {
-        console.log(`   ${route} → ${file}`);
-    });
+    console.log('   /             → index.html');
+    console.log('   /dashboard    → dashboard.html');
+    console.log('   /api-docs     → api_docs.html');
+    console.log('   /login        → login.html');
+    console.log('   /register     → register.html');
+    console.log('   /pricing      → pricing.html');
+    console.log('   /privacy      → privacy_policy.html');
+    console.log('   /terms        → terms_of_service.html');
+    console.log('   /billing      → billing_portal.html');
+    console.log('   /api-keys     → api_keys.html');
+    console.log('   /analytics    → analytics.html');
+    console.log('   /support      → support.html');
+    console.log('   /status       → status.html');
+    console.log('   /webhooks     → webhooks.html');
+    console.log('   /logs         → logs.html');
+    console.log('   /models       → models.html');
+    console.log('   /compress     → compress.html');
+    console.log('   /payments     → payments.html');
+    console.log('   /wallets      → wallets.html');
+    console.log('   /transactions → transactions.html');
+    console.log('   /settings     → settings.html');
+    console.log('   /security     → security.html');
+    console.log('   /sandbox      → sandbox.html');
+    console.log('   /admin        → Admin Dashboard');
     console.log('========================================');
     console.log('👤 LOGIN: admin@ailifesolution.com / admin123');
     console.log('========================================');

@@ -1,10 +1,11 @@
 {
   "name": "sovereign-grid",
   "version": "31.0.0",
-  "description": "Sovereign Grid - AI Infrastructure",
+  "description": "Sovereign Grid - AI Infrastructure Platform",
   "main": "server.js",
   "engines": {
-    "node": "18.x"
+    "node": "18.x",
+    "npm": "9.x"
   },
   "scripts": {
     "start": "node server.js",
@@ -16,10 +17,7 @@
     "helmet": "^7.1.0",
     "morgan": "^1.10.0",
     "dotenv": "^16.4.5",
-    "jsonwebtoken": "^9.0.2",
-    "firebase-admin": "^12.1.1",
-    "axios": "^1.6.8",
-    "express-rate-limit": "^7.1.5"
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"

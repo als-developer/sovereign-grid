@@ -1,11 +1,8 @@
-// server.js - Sovereign Grid v31.0 (FULLY WORKING)
+// server.js - Sovereign Grid v31.0 (HEROKU OPTIMIZED)
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
 const path = require('path');
 const jwt = require('jsonwebtoken');
-const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 const app = express();
@@ -13,28 +10,27 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'sovereign-grid-secret-key-2026';
 
 // =====================================================
-// USERS DATABASE
+// USERS DATABASE (In-memory for demo)
 // =====================================================
 const validUsers = [
     { email: 'admin@ailifesolution.com', password: 'admin123', role: 'super_admin', name: 'Admin User' },
-    { email: 'admin@sovereigngrid.com', password: 'Sovereign@Admin2026!', role: 'super_admin', name: 'System Admin' },
     { email: 'zawadi@sovereigngrid.com', password: 'Zawadi@2026!', role: 'super_admin', name: 'Zawadi Sanga' }
 ];
 
 // =====================================================
 // MIDDLEWARE
 // =====================================================
-app.use(cookieParser());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
-
-// CORS
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Sovereign-Key']
 }));
+
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Serve static files from 'public' directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 // No Cache
 app.use((req, res, next) => {
@@ -45,17 +41,19 @@ app.use((req, res, next) => {
 });
 
 // =====================================================
-// AUTHENTICATION
+// AUTHENTICATION MIDDLEWARE
 // =====================================================
 function authenticate(req, res, next) {
     const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ error: 'Authentication required' });
+    if (!token) {
+        return res.status(401).json({ error: 'Authentication required' });
+    }
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
         req.user = decoded;
         next();
     } catch (error) {
-        return res.status(401).json({ error: 'Invalid token' });
+        return res.status(401).json({ error: 'Invalid or expired token' });
     }
 }
 
@@ -71,6 +69,7 @@ app.get('/', (req, res) => {
         version: '31.0',
         endpoints: {
             health: '/health',
+            version: '/version',
             login: '/api/auth/login',
             register: '/api/auth/register',
             admin: '/admin',
@@ -81,12 +80,20 @@ app.get('/', (req, res) => {
 
 // Health
 app.get('/health', (req, res) => {
-    res.json({ status: 'alive', version: '31.0', uptime: process.uptime() });
+    res.json({ 
+        status: 'alive', 
+        version: '31.0', 
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString()
+    });
 });
 
 // Version
 app.get('/version', (req, res) => {
-    res.json({ version: '31.0', environment: process.env.NODE_ENV || 'development' });
+    res.json({ 
+        version: '31.0', 
+        environment: process.env.NODE_ENV || 'development' 
+    });
 });
 
 // =====================================================
@@ -96,35 +103,56 @@ app.post('/api/auth/register', (req, res) => {
     try {
         const { email, password, name, role = 'admin' } = req.body;
         
+        // Validation
         if (!email || !password) {
             return res.status(400).json({ error: 'Email and password required' });
         }
         if (password.length < 6) {
             return res.status(400).json({ error: 'Password must be at least 6 characters' });
         }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return res.status(400).json({ error: 'Invalid email format' });
+        }
         
+        // Check existing user
         const existingUser = validUsers.find(u => u.email === email);
         if (existingUser) {
             return res.status(400).json({ error: 'User already exists' });
         }
         
-        const newUser = { email, password, role, name: name || email.split('@')[0] };
+        // Add new user
+        const newUser = {
+            email: email,
+            password: password,
+            role: role,
+            name: name || email.split('@')[0]
+        };
         validUsers.push(newUser);
         
+        // Generate token
         const token = jwt.sign(
             { email: newUser.email, role: newUser.role },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
         
+        console.log(`✅ New user registered: ${email} (${role})`);
+        console.log(`📊 Total users: ${validUsers.length}`);
+        
         res.json({
             success: true,
             message: 'User created successfully',
             token: token,
-            user: { email: newUser.email, role: newUser.role, name: newUser.name }
+            user: {
+                email: newUser.email,
+                role: newUser.role,
+                name: newUser.name
+            }
         });
+        
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('Registration error:', error);
+        res.status(500).json({ error: error.message || 'Internal server error' });
     }
 });
 
@@ -134,6 +162,11 @@ app.post('/api/auth/register', (req, res) => {
 app.post('/api/auth/login', (req, res) => {
     try {
         const { email, password } = req.body;
+        
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email and password required' });
+        }
+        
         const user = validUsers.find(u => u.email === email && u.password === password);
         
         if (!user) {
@@ -149,10 +182,17 @@ app.post('/api/auth/login', (req, res) => {
         res.json({
             success: true,
             token: token,
-            user: { email: user.email, role: user.role, name: user.name }
+            user: {
+                email: user.email,
+                role: user.role,
+                name: user.name || user.email.split('@')[0]
+            },
+            expiresIn: '24h'
         });
+        
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('Login error:', error);
+        res.status(500).json({ error: error.message || 'Internal server error' });
     }
 });
 
@@ -163,12 +203,14 @@ app.post('/api/auth/logout', (req, res) => {
 
 // Verify token
 app.get('/api/auth/verify', authenticate, (req, res) => {
-    res.json({ success: true, user: req.user });
+    res.json({ 
+        success: true, 
+        user: req.user,
+        timestamp: new Date().toISOString()
+    });
 });
 
-// =====================================================
-// LIST USERS
-// =====================================================
+// List all users (for testing)
 app.get('/api/auth/users', (req, res) => {
     const safeUsers = validUsers.map(u => ({
         email: u.email,
@@ -192,9 +234,12 @@ app.post('/api/truth/check', authenticate, (req, res) => {
         let confidence = 98.5;
         const textLower = text.toLowerCase();
         
-        if (textLower.includes('fake') || textLower.includes('hoax')) {
+        if (textLower.includes('fake') || textLower.includes('hoax') || textLower.includes('misinformation')) {
             verdict = 'VERIFIED_FALSE';
             confidence = 85.2;
+        } else if (textLower.includes('believe') || textLower.includes('think') || textLower.includes('suggest')) {
+            verdict = 'OPINION_DETECTED';
+            confidence = 92.7;
         }
         
         res.json({
@@ -219,11 +264,18 @@ app.post('/api/pay/charge', authenticate, (req, res) => {
             return res.status(400).json({ error: 'Valid amount required' });
         }
         
+        const exchangeRates = { USD: 1, TZS: 2615.50, KES: 132.20 };
+        const rate = exchangeRates[currency.toUpperCase()] || 1;
+        const amountUSD = amount / rate;
+        const cashback = amountUSD * 0.05;
+        
         res.json({
             success: true,
-            transaction_id: 'txn_' + Date.now(),
+            transaction_id: 'txn_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
             amount: amount,
             currency: currency.toUpperCase(),
+            amount_usd: amountUSD.toFixed(4),
+            cashback: cashback.toFixed(4),
             status: 'completed',
             timestamp: new Date().toISOString()
         });
@@ -235,35 +287,11 @@ app.post('/api/pay/charge', authenticate, (req, res) => {
 app.get('/api/pay/balance', authenticate, (req, res) => {
     res.json({
         success: true,
+        user_id: req.user?.email || 'admin@ailifesolution.com',
         balance_usd: 247.50,
         balance_tzs: (247.50 * 2615.50).toFixed(2),
         currency: 'USD'
     });
-});
-
-// =====================================================
-// AI SHRINKER
-// =====================================================
-app.post('/api/shrink/compress', authenticate, (req, res) => {
-    try {
-        const { model_name, precision = 'int4' } = req.body;
-        if (!model_name) {
-            return res.status(400).json({ error: 'Model name required' });
-        }
-        
-        res.json({
-            success: true,
-            job_id: 'job_' + Date.now(),
-            model_name: model_name,
-            original_size_gb: 140,
-            compressed_size_gb: 14,
-            compression_ratio: '10x',
-            status: 'processing',
-            timestamp: new Date().toISOString()
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
 });
 
 // =====================================================
@@ -275,6 +303,8 @@ app.get('/api/admin/stats', authenticate, (req, res) => {
         total_users: validUsers.length,
         active_users: validUsers.length,
         total_revenue: 0,
+        total_ai_jobs: 0,
+        total_api_calls: 0,
         uptime_seconds: process.uptime(),
         version: '31.0'
     });
@@ -286,7 +316,8 @@ app.get('/api/admin/users', authenticate, (req, res) => {
         email: u.email,
         name: u.name || u.email.split('@')[0],
         role: u.role,
-        status: 'active'
+        status: 'active',
+        created_at: new Date().toISOString()
     }));
     res.json({ success: true, users: users, total: users.length });
 });
@@ -319,33 +350,12 @@ app.get('/api/admin/settings', authenticate, (req, res) => {
         settings: {
             app_name: 'Sovereign Grid',
             version: '31.0',
-            environment: 'production'
+            environment: 'production',
+            maintenance_mode: false,
+            api_rate_limit: 100,
+            payment_gateway: 'PayPal'
         }
     });
-});
-
-// =====================================================
-// FORCE LOGOUT
-// =====================================================
-app.get('/admin/force-logout', (req, res) => {
-    res.clearCookie('token');
-    res.clearCookie('session');
-    res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head><title>Logging out...</title>
-        <script>
-            localStorage.clear();
-            sessionStorage.clear();
-            document.cookie.split(";").forEach(function(c) {
-                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-            });
-            window.location.href = '/admin/login?cleared=' + Date.now();
-        </script>
-        </head>
-        <body><h2>Logging out...</h2></body>
-        </html>
-    `);
 });
 
 // =====================================================
@@ -360,8 +370,8 @@ app.get('/admin', (req, res) => {
 });
 
 app.get('/admin/*', (req, res) => {
-    const filePath = path.join(__dirname, 'public/admin', req.params[0]);
     const fs = require('fs');
+    const filePath = path.join(__dirname, 'public/admin', req.params[0]);
     if (fs.existsSync(filePath)) {
         return res.sendFile(filePath);
     }
@@ -383,31 +393,69 @@ app.get('/api/docs', (req, res) => {
 });
 
 // =====================================================
+// FORCE LOGOUT
+// =====================================================
+app.get('/admin/force-logout', (req, res) => {
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>Logging out...</title>
+        <script>
+            localStorage.clear();
+            sessionStorage.clear();
+            document.cookie.split(";").forEach(function(c) {
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+            });
+            window.location.href = '/admin/login?cleared=' + Date.now();
+        </script>
+        </head>
+        <body style="background:#0a0a0f;color:#e0e0e0;font-family:Arial;display:flex;justify-content:center;align-items:center;height:100vh;">
+            <h2>🚪 Logging out...</h2>
+        </body>
+        </html>
+    `);
+});
+
+// =====================================================
 // ERROR HANDLING
 // =====================================================
 app.use((req, res) => {
-    res.status(404).json({ error: 'Endpoint not found', path: req.path });
+    res.status(404).json({ 
+        error: 'Endpoint not found', 
+        path: req.path,
+        method: req.method
+    });
 });
 
 app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    res.status(500).json({ error: err.message || 'Internal server error' });
+    console.error('❌ Error:', err);
+    res.status(500).json({ 
+        error: err.message || 'Internal server error',
+        timestamp: new Date().toISOString()
+    });
 });
 
 // =====================================================
 // START SERVER
 // =====================================================
 app.listen(PORT, '0.0.0.0', () => {
+    console.log('');
     console.log('========================================');
     console.log('🚀 SOVEREIGN GRID v31.0 RUNNING');
     console.log('========================================');
     console.log(`📍 Port: ${PORT}`);
     console.log(`🌐 URL: https://sovereign-grid-ailife-a33180041607.herokuapp.com`);
-    console.log(`🔐 Login: /admin/login`);
     console.log(`📝 Register: /register`);
+    console.log(`🔐 Login: /admin/login`);
     console.log(`👑 Admin: /admin`);
+    console.log(`📖 API Docs: /api/docs`);
     console.log('========================================');
-    console.log('👤 LOGIN: admin@ailifesolution.com / admin123');
+    console.log('👤 EXISTING ACCOUNTS:');
+    validUsers.forEach(u => {
+        console.log(`   ${u.email} / ${u.password}`);
+    });
+    console.log('========================================');
+    console.log('⏰ Started at:', new Date().toISOString());
     console.log('========================================');
 });
 

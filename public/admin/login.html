@@ -73,6 +73,22 @@
         .login-btn:hover {
             background: #4f46e5;
         }
+        .logout-btn {
+            width: 100%;
+            padding: 10px;
+            background: #ef4444;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 10px;
+        }
+        .logout-btn:hover {
+            background: #dc2626;
+        }
         .error-msg {
             color: #ef4444;
             font-size: 14px;
@@ -94,6 +110,22 @@
             font-size: 11px;
             padding: 2px 0;
         }
+        .clear-session-btn {
+            width: 100%;
+            padding: 8px;
+            background: transparent;
+            border: 1px solid #1a1a2e;
+            border-radius: 8px;
+            color: #6b7280;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.2s;
+        }
+        .clear-session-btn:hover {
+            border-color: #6366f1;
+            color: #e0e0e0;
+        }
     </style>
 </head>
 <body>
@@ -101,18 +133,28 @@
         <h1>⚡ Sovereign Grid</h1>
         <p class="subtitle">Admin Login · v31.0</p>
         
-        <form id="loginForm" style="margin-top: 24px;">
+        <!-- Clear Session Button -->
+        <button onclick="clearSession()" class="clear-session-btn">
+            🗑️ Clear Session & Logout
+        </button>
+        
+        <form id="loginForm" style="margin-top: 16px;">
             <div style="margin-bottom: 16px;">
                 <label>Email Address</label>
-                <input type="email" id="email" value="admin@ailifesolution.com" required>
+                <input type="email" id="email" placeholder="admin@ailifesolution.com" required>
             </div>
             <div style="margin-bottom: 20px;">
                 <label>Password</label>
-                <input type="password" id="password" value="admin123" required>
+                <input type="password" id="password" placeholder="Enter password" required>
             </div>
             <button type="submit" class="login-btn">🔐 Sign In</button>
             <div id="errorMsg" class="error-msg"></div>
         </form>
+        
+        <!-- Logout Button (Visible if logged in) -->
+        <button id="logoutBtn" onclick="forceLogout()" class="logout-btn" style="display:none;">
+            🚪 Force Logout
+        </button>
         
         <div class="test-accounts">
             <strong style="color:#9ca3af;">📋 Test Accounts:</strong>
@@ -124,6 +166,49 @@
     </div>
 
     <script>
+        // =====================================================
+        // CLEAR SESSION - Force logout and clear all storage
+        // =====================================================
+        
+        function clearSession() {
+            // Clear localStorage
+            localStorage.clear();
+            
+            // Clear sessionStorage
+            sessionStorage.clear();
+            
+            // Clear cookies
+            document.cookie.split(";").forEach(function(c) {
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+            });
+            
+            // Reload page
+            location.reload();
+            
+            alert("✅ Session cleared! Please login again.");
+        }
+        
+        function forceLogout() {
+            fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                }
+            }).then(() => {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/admin/login';
+            }).catch(() => {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/admin/login';
+            });
+        }
+
+        // =====================================================
+        // LOGIN FORM
+        // =====================================================
+        
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -132,6 +217,12 @@
             const errorMsg = document.getElementById('errorMsg');
             
             errorMsg.style.display = 'none';
+            
+            if (!email || !password) {
+                errorMsg.textContent = 'Please enter both email and password';
+                errorMsg.style.display = 'block';
+                return;
+            }
             
             try {
                 const response = await fetch('/api/auth/login', {
@@ -155,6 +246,34 @@
                 errorMsg.style.display = 'block';
             }
         });
+
+        // =====================================================
+        // CHECK IF ALREADY LOGGED IN
+        // =====================================================
+        
+        async function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const response = await fetch('/api/auth/verify', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Show logout button
+                        document.getElementById('logoutBtn').style.display = 'block';
+                        document.getElementById('email').value = data.user?.email || '';
+                        document.getElementById('password').placeholder = 'Already logged in';
+                    }
+                } catch (error) {
+                    console.log('Not logged in');
+                }
+            }
+        }
+        
+        // Check auth on page load
+        checkAuth();
     </script>
 </body>
 </html>
